@@ -293,6 +293,5 @@ FIBA/
 
 **Wersja**: 2.0  
 **Data ostatniej aktualizacji**: Grudzień 22, 2025  
-**Deweloper**: Łukasz Nowak + GitHub Copilot (AI)  
+**Deweloper**: GitHub Copilot (AI)  
 **Stack**: Vue.js 3 Production, HTML5, CSS3 Grid/Flexbox, LocalStorage API
-
