@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basketball Scoreboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <h1>🏀 Basketball Scoreboard</h1>
+                <div class="header-controls">
+                    <template v-if="['game', 'stats', 'protocol'].includes(currentView)">
+                        <button class="btn btn-primary btn-small" @click="printProtocol">🖨️ Print</button>
+                        <button class="btn btn-primary btn-small" @click="exportToPDF">📸 PDF</button>
+                    </template>
+                    <button class="btn btn-danger btn-small" @click="resetGame" v-if="currentView === 'game'">Reset Game</button>
+                    <button class="btn btn-success btn-small" @click="saveGame" v-if="currentView === 'game'">Save Game</button>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="tabs">
+                <button class="tab" :class="{active: currentView === 'setup'}" @click="currentView = 'setup'">
+                    ⚙️ Setup
+                </button>
+                <button class="tab" :class="{active: currentView === 'game'}" @click="currentView = 'game'" :disabled="!gameReady">
+                    🎮 Game
+                </button>
+                <button class="tab" :class="{active: currentView === 'stats'}" @click="currentView = 'stats'">
+                    📊 Stats
+                </button>
+                <button class="tab" :class="{active: currentView === 'protocol'}" @click="currentView = 'protocol'" :disabled="!gameReady">
+                    📋 Protocol
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Setup View -->
+                <div class="view" :class="{active: currentView === 'setup'}">
+                    <div class="team-setup">
+                        <!-- Team Setup Panels (A & B) -->
+                        <div v-for="(team, teamId) in {A: teamA, B: teamB}" :key="teamId" 
+                             class="team-panel" 
+                             :class="'team-' + teamId.toLowerCase()">
+                            <h2>Team {{ teamId }} ({{ teamId === 'A' ? 'Home' : 'Away' }})</h2>
+                            <div class="input-group">
+                                <label>Team Name:</label>
+                                <input type="text" v-model="team.name" :placeholder="'Enter team ' + teamId + ' name'">
+                            </div>
+                            
+                            <div class="player-list">
+                                <h3>Players (Click 🏀 to put on court)</h3>
+                                <div class="player-item" v-for="(player, index) in team.players" :key="index">
+                                    <button class="btn btn-small" 
+                                            :style="{background: player.onCourt ? '#10b981' : '#6b7280', color: 'white', padding: '8px 12px'}"
+                                            @click="togglePlayerCourt(teamId, index)"
+                                            title="Toggle court/bench">
+                                        {{ player.onCourt ? '🏀' : '💺' }}
+                                    </button>
+                                    <input type="number" v-model="player.number" placeholder="#" style="width: 60px;">
+                                    <input type="text" v-model="player.name" placeholder="Player Name">
+                                    <button class="btn btn-danger btn-small" @click="removePlayer(teamId, index)">✕</button>
+                                </div>
+                                <button class="btn btn-primary btn-small" @click="addPlayer(teamId)">+ Add Player</button>
+                            </div>
+
+                            <div class="file-import">
+                                <label :for="'importTeam' + teamId">📁 Import JSON</label>
+                                <input type="file" :id="'importTeam' + teamId" @change="importTeam(teamId, $event)" accept=".json">
+                            </div>
+                            <button class="btn btn-success btn-small" @click="exportTeam(teamId)" style="margin-top: 10px;">
+                                💾 Export Team
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button class="btn btn-success" @click="startGame" :disabled="!canStartGame">
+                            ▶️ Start Game
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Game View -->
+                <div class="view" :class="{active: currentView === 'game'}">
+                    <!-- Period Selector -->
+                    <div class="period-selector">
+                        <button class="period-btn" 
+                                v-for="p in 4" 
+                                :key="p" 
+                                :class="{active: currentPeriod === p}"
+                                @click="currentPeriod = p">
+                            Q{{ p }}
+                        </button>
+                    </div>
+
+                    <!-- Scoreboard -->
+                    <div class="scoreboard">
+                        <!-- Team Panels (A & B) -->
+                        <div v-for="(team, teamId) in {A: teamA, B: teamB}" :key="teamId" 
+                             class="score-panel"
+                             :class="'team-' + teamId.toLowerCase()">
+                            <div class="team-name">{{ team.name || 'Team ' + teamId }}</div>
+                            <div class="score">{{ team.score }}</div>
+                            
+                            <!-- Team Stats Grid -->
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-label">Fouls</div>
+                                    <div class="stat-value">{{ team.fouls }}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">FT Made</div>
+                                    <div class="stat-value">{{ team.freeThrowsMade }}/{{ team.freeThrowsTotal }}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Timeouts</div>
+                                    <div class="stat-value">{{ getAvailableTimeouts(teamId) }}</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Player Sections: On Court & Reserves -->
+                            <div class="player-sections-container">
+                                <!-- On Court Section -->
+                                <div class="player-section"
+                                     @drop="dropOnCourt(teamId, $event)"
+                                     @dragover="onDragOver"
+                                     @dragenter.prevent
+                                     @dragleave.prevent">
+                                    <div class="player-section-title">🏀 ON COURT (Drag & Drop)</div>
+                                    <div class="player-buttons">
+                                        <button v-for="(player, index) in team.players.filter(p => p.onCourt)" 
+                                                :key="'court-' + teamId.toLowerCase() + '-' + index"
+                                                class="player-btn"
+                                                :class="{selected: isPlayerSelected(teamId, player)}"
+                                                draggable="true"
+                                                @dragstart="startDrag(teamId, team.players.indexOf(player), $event)"
+                                                @dragover.prevent
+                                                @drop="dropOnPlayer(teamId, team.players.indexOf(player), $event)"
+                                                @dragend="clearDragState"
+                                                @click="selectPlayerByIndex(teamId, team.players.indexOf(player))">
+                                            <span class="player-number">#{{ player.number }}</span>
+                                            <span class="player-name">{{ getLastName(player.name) }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Reserves Section -->
+                                <div class="player-section" 
+                                     v-if="team.players.filter(p => !p.onCourt).length > 0"
+                                     @drop="dropOnBench(teamId, $event)"
+                                     @dragover="onDragOver"
+                                     @dragenter.prevent
+                                     @dragleave.prevent">
+                                    <div class="player-section-title">💺 RESERVES</div>
+                                    <div class="player-buttons">
+                                        <button v-for="(player, index) in team.players.filter(p => !p.onCourt)" 
+                                                :key="'bench-' + teamId.toLowerCase() + '-' + index"
+                                                class="player-btn"
+                                                :class="{selected: isPlayerSelected(teamId, player)}"
+                                                draggable="true"
+                                                @dragstart="startDrag(teamId, team.players.indexOf(player), $event)"
+                                                @dragover.prevent
+                                                @drop="dropOnPlayer(teamId, team.players.indexOf(player), $event)"
+                                                @dragend="clearDragState"
+                                                @click="selectPlayerByIndex(teamId, team.players.indexOf(player))">
+                                            <span class="player-number">#{{ player.number }}</span>
+                                            <span class="player-name">{{ getLastName(player.name) }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="action-grid">
+                                <button class="action-btn points-1" @click="addPoints(teamId, 1)">🎯 +1</button>
+                                <button class="action-btn points-2" @click="addPoints(teamId, 2)">🏀 +2</button>
+                                <button class="action-btn points-3" @click="addPoints(teamId, 3)">🚀 +3</button>
+                                <button class="action-btn foul" @click="addFoul(teamId)">⚠️ Foul</button>
+                                <button class="action-btn free-throw" @click="addFreeThrow(teamId, true)">✅ 1 Point</button>
+                                <button class="action-btn free-throw" @click="addFreeThrow(teamId, false)">❌ FT Miss</button>
+                                <button class="action-btn" 
+                                        style="background: #ff9800; color: white;"
+                                        @click="addTimeout(teamId)"
+                                        :disabled="!canAddTimeout(teamId)">
+                                    ⏸️ TO ({{ getAvailableTimeouts(teamId) }})
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Game Log -->
+                    <div class="game-log">
+                        <h3>Game Log</h3>
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th>Q</th>
+                                    <th>Time</th>
+                                    <th>Team</th>
+                                    <th>Player</th>
+                                    <th>Action</th>
+                                    <th>Score</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(entry, index) in reversedGameLog" :key="index">
+                                    <td>{{ entry.period }}</td>
+                                    <td>{{ entry.time }}</td>
+                                    <td>{{ entry.teamName }}</td>
+                                    <td>
+                                        <span v-if="entry.player">#{{ entry.player.number }} {{ entry.player.name }}</span>
+                                        <span v-else>-</span>
+                                    </td>
+                                    <td>{{ entry.action }}</td>
+                                    <td><strong>{{ getScoreAtLogIndex(gameLog.length - 1 - index) }}</strong></td>
+                                    <td>
+                                        <button class="delete-btn" @click="deleteLogEntry(index)">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Stats View -->
+                <div class="view" :class="{active: currentView === 'stats'}">
+                    <h2>📊 Game Statistics</h2>
+                    
+                    <!-- Final Score -->
+                    <div style="text-align: center; margin: 20px 0;">
+                        <h3 style="font-size: 24px; color: #2a5298;">
+                            {{ teamA.name }} <span style="color: #dc2626;">{{ teamA.score }}</span> : 
+                            <span style="color: #dc2626;">{{ teamB.score }}</span> {{ teamB.name }}
+                        </h3>
+                    </div>
+
+                    <!-- Team Statistics Tables -->
+                    <div class="protocol-two-columns" style="margin-top: 20px;">
+                        <div v-for="(team, teamId) in {A: teamA, B: teamB}" :key="teamId"
+                             :class="teamId === 'A' ? 'protocol-left-column' : 'protocol-right-column'">
+                            <div class="protocol-section-title">{{ team.name || 'Team ' + teamId }} - Statistics</div>
+                            
+                            <!-- Team Summary Table -->
+                            <table class="protocol-table" style="margin-bottom: 20px;">
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="text-align: left; padding-left: 8px; font-size: 10px;"><strong>Total Points</strong></td>
+                                        <td style="font-size: 10px;"><strong>{{ team.score }}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align: left; padding-left: 8px; font-size: 10px;">Team Fouls</td>
+                                        <td style="font-size: 10px;">{{ team.fouls }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align: left; padding-left: 8px; font-size: 10px;">Free Throws</td>
+                                        <td style="font-size: 10px;">{{ team.freeThrowsMade }}/{{ team.freeThrowsTotal }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align: left; padding-left: 8px; font-size: 10px;">FT Percentage</td>
+                                        <td style="font-size: 10px;"><strong>{{ calculateFreeThrowPercentage(teamId) }}%</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- Player Statistics Table -->
+                            <div class="protocol-section-title">Player Statistics</div>
+                            <table class="protocol-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>PTS</th>
+                                        <th>Fouls</th>
+                                        <th>FT</th>
+                                        <th>FT%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="player in team.players" :key="player.number">
+                                        <td style="font-size: 10px;"><strong>{{ player.number }}</strong></td>
+                                        <td style="text-align: left; font-size: 10px;">{{ player.name }}</td>
+                                        <td style="font-size: 10px;"><strong>{{ getPlayerPoints(teamId, player.number) }}</strong></td>
+                                        <td style="font-size: 10px;">{{ getPlayerFouls(teamId, player.number) }}</td>
+                                        <td style="font-size: 10px;">{{ getPlayerFreeThrows(teamId, player.number).made }}/{{ getPlayerFreeThrows(teamId, player.number).total }}</td>
+                                        <td style="font-size: 10px;">{{ calculatePlayerFTPercentage(teamId, player.number) }}</td>
+                                    </tr>
+                                    <tr style="background: #e3f2fd; font-weight: 700; font-size: 10px;">
+                                        <td colspan="2">TOTAL</td>
+                                        <td><strong>{{ team.score }}</strong></td>
+                                        <td>{{ team.fouls }}</td>
+                                        <td>{{ team.freeThrowsMade }}/{{ team.freeThrowsTotal }}</td>
+                                        <td>{{ calculateFreeThrowPercentage(teamId) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Protocol View -->
+                <div class="view" :class="{active: currentView === 'protocol'}">
+                    <div class="protocol-container">
+                        <!-- Protocol Header -->
+                        <div class="protocol-header">
+                            <h2>🏀 BASKETBALL GAME PROTOCOL</h2>
+                            <p style="color: #666; font-size: 14px;">Official Game Report</p>
+                        </div>
+
+                        <!-- Game Info -->
+                        <div class="protocol-info">
+                            <div class="protocol-info-item">
+                                <div class="protocol-info-label">Date</div>
+                                <div class="protocol-info-value">{{ currentDate }}</div>
+                            </div>
+                            <div class="protocol-info-item">
+                                <div class="protocol-info-label">Teams</div>
+                                <div class="protocol-info-value">{{ teamA.name }} vs {{ teamB.name }}</div>
+                            </div>
+                            <div class="protocol-info-item">
+                                <div class="protocol-info-label">Final Score</div>
+                                <div class="protocol-info-value">{{ teamA.score }} : {{ teamB.score }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Final Score Display -->
+                        <div class="protocol-final-score">
+                            <strong>{{ teamA.name }}</strong> {{ teamA.score }} : {{ teamB.score }} <strong>{{ teamB.name }}</strong>
+                        </div>
+
+                        <!-- Quarter Scores -->
+                        <div class="protocol-section-title">📊 Quarter Scores</div>
+                        <table class="protocol-table">
+                            <thead>
+                                <tr>
+                                    <th>Team</th>
+                                    <th>Q1</th>
+                                    <th>Q2</th>
+                                    <th>Q3</th>
+                                    <th>Q4</th>
+                                    <th>TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(team, teamId) in {A: teamA, B: teamB}" :key="teamId">
+                                    <td class="protocol-team-name">{{ team.name }}</td>
+                                    <td v-for="q in 4" :key="q">{{ getQuarterScore(teamId, q) }}</td>
+                                    <td><strong>{{ team.score }}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Player Tables: Team A and Team B Side by Side -->
+                        <div class="protocol-two-columns">
+                            <div v-for="(team, teamId) in {A: teamA, B: teamB}" :key="teamId"
+                                 :class="teamId === 'A' ? 'protocol-left-column' : 'protocol-right-column'">
+                                <div class="protocol-section-title">👥 {{ team.name }} - Players</div>
+                                <table class="protocol-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Name</th>
+                                            <th>Played</th>
+                                            <th>PTS</th>
+                                            <th>F</th>
+                                            <th>FT</th>
+                                            <th>%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="player in team.players" :key="player.number">
+                                            <td class="protocol-cell"><strong>{{ player.number }}</strong></td>
+                                            <td class="protocol-cell" style="text-align: left;">{{ player.name }}</td>
+                                            <td class="protocol-cell"><strong>{{ getPlayerStatus(teamId, player) }}</strong></td>
+                                            <td class="protocol-cell"><strong>{{ getPlayerPoints(teamId, player.number) }}</strong></td>
+                                            <td class="protocol-cell">{{ getPlayerFouls(teamId, player.number) }}</td>
+                                            <td class="protocol-cell">{{ getPlayerFreeThrows(teamId, player.number).made }}/{{ getPlayerFreeThrows(teamId, player.number).total }}</td>
+                                            <td class="protocol-cell">{{ calculatePlayerFTPercentage(teamId, player.number) }}</td>
+                                        </tr>
+                                        <tr style="background: #e3f2fd; font-weight: 700;">
+                                            <td colspan="3">TOTAL</td>
+                                            <td><strong>{{ team.score }}</strong></td>
+                                            <td>{{ team.fouls }}</td>
+                                            <td>{{ team.freeThrowsMade }}/{{ team.freeThrowsTotal }}</td>
+                                            <td>{{ calculateFreeThrowPercentage(teamId) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Game Log: Two Halves Side by Side -->
+                        <div class="protocol-section-title protocol-game-log-section">📝 Game Log</div>
+                        <div class="protocol-two-columns protocol-game-log-content">
+                            <div v-for="(halfLog, halfName) in {first: firstHalfLog, second: secondHalfLog}" :key="halfName"
+                                 :class="halfName === 'first' ? 'protocol-left-column' : 'protocol-right-column'">
+                                <h4 class="protocol-half-title">
+                                    {{ halfName === 'first' ? '1ST HALF (Q1 + Q2)' : '2ND HALF (Q3 + Q4)' }}
+                                </h4>
+                                <table class="protocol-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25px;">Q</th>
+                                            <th style="width: 45px;">Time</th>
+                                            <th style="width: 50px;">Team</th>
+                                            <th>Player</th>
+                                            <th>Action</th>
+                                            <th style="width: 40px;">Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(entry, index) in halfLog" :key="halfName + '-' + index">
+                                            <td>{{ entry.period }}</td>
+                                            <td class="protocol-log-cell">{{ entry.time }}</td>
+                                            <td class="protocol-log-cell protocol-team-name">{{ entry.teamName }}</td>
+                                            <td class="protocol-log-cell">
+                                                <span v-if="entry.player">#{{ entry.player.number }} {{ entry.player.name }}</span>
+                                                <span v-else>-</span>
+                                            </td>
+                                            <td class="protocol-log-cell">{{ entry.action }}</td>
+                                            <td class="protocol-log-cell" style="font-weight: 700;">{{ getScoreAtLogIndex(gameLog.indexOf(entry)) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="protocol-summary">
+                            <div v-for="(team, teamId) in {A: teamA, B: teamB}" :key="teamId" class="protocol-summary-box">
+                                <h3>{{ team.name }}</h3>
+                                <p><strong>Points:</strong> {{ team.score }}</p>
+                                <p><strong>Team Fouls:</strong> {{ team.fouls }}</p>
+                                <p><strong>Free Throws:</strong> {{ team.freeThrowsMade }}/{{ team.freeThrowsTotal }} ({{ calculateFreeThrowPercentage(teamId) }}%)</p>
+                            </div>
+                        </div>
+
+                        <!-- Signatures -->
+                        <div style="margin-top: 15px; border-top: 1px solid #ccc; padding-top: 10px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center;">
+                                <div v-for="role in ['Head Referee', 'Table Official', 'Commissioner']" :key="role">
+                                    <p style="margin-bottom: 20px; color: #666; font-size: 10px;">{{ role }}</p>
+                                    <div style="border-bottom: 1px solid #333;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vue.js 3 from CDN - Production Build -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

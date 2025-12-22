@@ -1,0 +1,15 @@
+{
+  "name": "Cracovia",
+  "players": [
+    { "number": 5, "name": "Krzysztof Kamiński" },
+    { "number": 8, "name": "Mateusz Piotrowski" },
+    { "number": 11, "name": "Robert Grabowski" },
+    { "number": 13, "name": "Bartosz Pawłowski" },
+    { "number": 16, "name": "Grzegorz Michalski" },
+    { "number": 21, "name": "Damian Nowakowski" },
+    { "number": 24, "name": "Sebastian Adamczyk" },
+    { "number": 30, "name": "Artur Wróblewski" },
+    { "number": 33, "name": "Marcin Krawczyk" },
+    { "number": 44, "name": "Rafał Kaczmarek" }
+  ]
+}

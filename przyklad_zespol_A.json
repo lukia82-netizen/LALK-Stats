@@ -1,0 +1,15 @@
+{
+  "name": "Wisła Kraków",
+  "players": [
+    { "number": 4, "name": "Jan Kowalski" },
+    { "number": 7, "name": "Piotr Nowak" },
+    { "number": 10, "name": "Marek Wiśniewski" },
+    { "number": 12, "name": "Tomasz Lewandowski" },
+    { "number": 15, "name": "Michał Zieliński" },
+    { "number": 20, "name": "Kamil Szymański" },
+    { "number": 23, "name": "Paweł Woźniak" },
+    { "number": 32, "name": "Jakub Dąbrowski" },
+    { "number": 34, "name": "Łukasz Kozłowski" },
+    { "number": 41, "name": "Adam Jankowski" }
+  ]
+}
