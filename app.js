@@ -26,13 +26,11 @@ const ACTION_TYPES = {
 
 // === UTILITY FUNCTIONS ===
 const Utils = {
-    getCurrentTime() {
-        const now = new Date();
-        return now.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            second: '2-digit'
-        });
+    getCurrentTime(minutes, seconds) {
+        // Format game clock time as MM:SS
+        const min = String(minutes).padStart(2, '0');
+        const sec = String(seconds).padStart(2, '0');
+        return `${min}:${sec}`;
     },
 
     formatDate(date) {
@@ -195,14 +193,14 @@ class Team {
 
 // === GAME LOG ENTRY ===
 class GameLogEntry {
-    constructor(team, teamName, action, player, period, points = 0) {
+    constructor(team, teamName, action, player, period, points = 0, gameClockMinutes = 10, gameClockSeconds = 0) {
         this.team = team;
         this.teamName = teamName;
         this.action = action;
         this.player = player;
         this.period = period;
         this.points = points;
-        this.time = Utils.getCurrentTime();
+        this.time = Utils.getCurrentTime(gameClockMinutes, gameClockSeconds);
     }
 }
 
@@ -226,6 +224,12 @@ createApp({
             gameLog: [],
             gameTime: '00:00',
 
+            // === GAME CLOCK ===
+            gameClockMinutes: 10,
+            gameClockSeconds: 0,
+            gameClockRunning: false,
+            gameClockInterval: null,
+
             // === DRAG AND DROP STATE ===
             draggedPlayer: null,
             draggedTeam: null,
@@ -243,6 +247,12 @@ createApp({
         // === DATE & TIME ===
         currentDate() {
             return Utils.formatDate(new Date());
+        },
+
+        gameClockFormatted() {
+            const min = String(this.gameClockMinutes).padStart(2, '0');
+            const sec = String(this.gameClockSeconds).padStart(2, '0');
+            return `${min}:${sec}`;
         },
 
         // === GAME LOG FILTERS ===
@@ -444,7 +454,8 @@ createApp({
             this.gameReady = true;
             this.currentView = 'game';
             this.resetScores();
-            alert('Game started! Good luck!');
+            this.resetGameClock();
+            alert('Game started! Good luck! Press Start to begin the clock.');
         },
 
         resetGame() {
@@ -454,6 +465,7 @@ createApp({
             this.resetScores();
             this.gameLog = [];
             this.currentPeriod = 1;
+            this.resetGameClock();
         },
 
         resetScores() {
@@ -534,6 +546,56 @@ createApp({
         },
 
         // ============================================
+        // GAME CLOCK
+        // ============================================
+        startGameClock() {
+            if (this.gameClockRunning) return;
+            
+            this.gameClockRunning = true;
+            this.gameClockInterval = setInterval(() => {
+                if (this.gameClockSeconds === 0) {
+                    if (this.gameClockMinutes === 0) {
+                        // Quarter ended
+                        this.pauseGameClock();
+                        this.onQuarterEnd();
+                        return;
+                    }
+                    this.gameClockMinutes--;
+                    this.gameClockSeconds = 59;
+                } else {
+                    this.gameClockSeconds--;
+                }
+            }, 1000);
+        },
+
+        pauseGameClock() {
+            this.gameClockRunning = false;
+            if (this.gameClockInterval) {
+                clearInterval(this.gameClockInterval);
+                this.gameClockInterval = null;
+            }
+        },
+
+        resetGameClock() {
+            this.pauseGameClock();
+            this.gameClockMinutes = 10;
+            this.gameClockSeconds = 0;
+        },
+
+        onQuarterEnd() {
+            if (this.currentPeriod < 4) {
+                if (confirm(`Quarter ${this.currentPeriod} ended! Start Quarter ${this.currentPeriod + 1}?`)) {
+                    this.currentPeriod++;
+                    this.resetGameClock();
+                    this.startGameClock();
+                }
+            } else {
+                alert('Game Over! Final score: ' + this.teamA.name + ' ' + this.teamA.score + ' - ' + this.teamB.score + ' ' + this.teamB.name);
+                this.resetGameClock();
+            }
+        },
+
+        // ============================================
         // GAME LOG
         // ============================================
         logAction(data) {
@@ -543,7 +605,9 @@ createApp({
                 data.action,
                 data.player,
                 data.period,
-                data.points || 0
+                data.points || 0,
+                this.gameClockMinutes,
+                this.gameClockSeconds
             );
             this.gameLog.push(entry);
         },
@@ -806,5 +870,10 @@ createApp({
     beforeUnmount() {
         // Clean up event listener
         window.removeEventListener('keydown', this.handleKeyPress);
+        
+        // Clean up game clock interval
+        if (this.gameClockInterval) {
+            clearInterval(this.gameClockInterval);
+        }
     }
 }).mount('#app');

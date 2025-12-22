@@ -99,6 +99,34 @@
                         </button>
                     </div>
 
+                    <!-- Game Clock -->
+                    <div style="text-align: center; margin: 20px auto; max-width: 400px;">
+                        <div :style="{
+                            background: '#000',
+                            padding: '25px 40px',
+                            borderRadius: '20px',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.4), inset 0 0 30px rgba(0,255,0,0.1)',
+                            border: gameClockRunning ? 'none' : '3px solid #ff0000',
+                            transition: 'border 0.3s ease'
+                        }">
+                            <div style="font-size: 72px; font-weight: 700; font-family: 'TimesSquare', 'Impact', 'Arial Black', sans-serif; color: #00ff00; letter-spacing: 8px;">
+                                {{ String(gameClockMinutes).padStart(2, '0') }}:{{ String(gameClockSeconds).padStart(2, '0') }}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                            <button class="btn btn-small" 
+                                    :class="gameClockRunning ? 'btn-secondary' : 'btn-success'"
+                                    :style="gameClockRunning ? {background: '#6c757d', borderColor: '#6c757d'} : {}"
+                                    @click="gameClockRunning ? pauseGameClock() : startGameClock()">
+                                {{ gameClockRunning ? '⏸️ Pause' : '▶️ Start' }}
+                            </button>
+                            <button class="btn btn-danger btn-small" 
+                                    @click="resetGameClock">
+                                🔄 Reset
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Scoreboard -->
                     <div class="scoreboard">
                         <!-- Team Panels (A & B) -->

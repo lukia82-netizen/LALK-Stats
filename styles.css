@@ -2,6 +2,17 @@
    Basketball Scoreboard - Stylesheet
    ============================================ */
 
+/* === CUSTOM FONTS === */
+@font-face {
+    font-family: 'TimesSquare';
+    src: url('TimesSquare.ttf') format('truetype'),
+         url('TimesSquare.woff') format('woff'),
+         url('TimesSquare.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 /* === RESET & BASE === */
 * {
     margin: 0;
@@ -289,6 +300,7 @@ body {
     font-size: 24px;
     font-weight: 700;
     margin-bottom: 15px;
+    font-family: 'TimesSquare', 'Impact', 'Arial Black', sans-serif;
 }
 
 .score {
@@ -296,6 +308,7 @@ body {
     font-weight: 900;
     line-height: 1;
     margin-bottom: 20px;
+    font-family: 'TimesSquare', 'Impact', 'Arial Black', sans-serif;
 }
 
 /* === STATS GRID === */
