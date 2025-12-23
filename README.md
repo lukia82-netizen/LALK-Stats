@@ -22,11 +22,15 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
 
 #### 🏀 Prowadzenie Meczu
 - **Punktacja**: +1, +2, +3 punkty z ikonami (🎯 🏀 🚀)
-- **Faule**: Osobiste i zespołowe z licznikiem (⚠️)
-- **Rzuty wolne**: Celne/niecelne z ikonami (✅/❌)
+- **Faule**: Osobiste i zespołowe z licznikiem (⚠️) - resetowane co kwartę
+- **Rzuty wolne**: Niecelne z ikoną (❌)
 - **Timeouty**: Limit 5 na mecz z kontrolą dostępności (⏸️)
-- **4 kwarty**: Pełne wsparcie z przełączaniem (Q1-Q4)
-- **Wybór zawodnika**: Kliknięcie przycisku zawodnika przed akcją
+- **4 kwarty**: Pełne wsparcie z przełączaniem (Q1-Q4), automatyczny reset fauli
+- **Zegar meczu**: 10-minutowy odliczający timer z kontrolą start/pause/reset
+- **Niestandardowy czas**: Podwójne kliknięcie zegara do ustawienia własnego czasu (MM:SS)
+- **Elastyczny workflow**: Wybierz zawodnika potem akcję LUB akcję potem zawodnika
+- **Akcje oczekujące**: Żółte podświetlenie akcji czekających na wybór zawodnika
+- **Anulowanie**: Kliknij poza obszarem graczy aby anulować wybór/akcję
 
 #### 👥 Zmiany Zawodników (NOWE!)
 - **Drag & Drop**: Przeciągnij zawodnika i upuść na innego aby zamienić pozycje
@@ -89,12 +93,19 @@ Przygotowanie zespołów przed meczem:
 
 #### 2. Game (🎮 zakładka)
 Prowadzenie meczu na żywo:
-1. **Wybierz zawodnika**: Kliknij jego przycisk (podświetli się)
-2. **Zarejestruj akcję**: Kliknij odpowiedni przycisk (+1/+2/+3/Foul/FT)
-3. **Zmiany zawodników**: Przeciągnij zawodnika i upuść na innego (zamiana pozycji)
-4. **Przełączanie kwart**: Przyciski Q1-Q4
-5. **Monitoring**: Sprawdzaj Game Log na dole strony
-6. **Korekty**: Przycisk "Delete" przy każdej akcji w logu
+1. **Sterowanie zegarem**: 
+   - Kliknij ▶️ Start aby rozpocząć odliczanie
+   - Kliknij ⏸️ Pause aby zatrzymać
+   - Kliknij 🔄 Reset aby wrócić do 10:00
+   - Podwójnie kliknij zegar aby ustawić własny czas
+2. **Zarejestruj akcję** (dwa sposoby):
+   - **Klasycznie**: Wybierz zawodnika → Kliknij akcję (natychmiastowe wykonanie)
+   - **Szybko**: Kliknij akcję (żółte podświetlenie) → Wybierz zawodnika (automatyczne wykonanie)
+3. **Anuluj akcję**: Kliknij poza obszarem graczy (na tle panelu zespołu)
+4. **Zmiany zawodników**: Przeciągnij zawodnika i upuść na innego (zamiana pozycji)
+5. **Przełączanie kwart**: Przyciski Q1-Q4 (faule zespołowe resetowane automatycznie)
+6. **Monitoring**: Sprawdzaj Game Log na dole strony
+7. **Korekty**: Przycisk "Delete" przy każdej akcji w logu
 
 #### 3. Stats (📊 zakładka)
 Podgląd statystyk w trakcie meczu:
@@ -220,7 +231,7 @@ FIBA/
 ## Roadmap i Potencjalne Ulepszenia
 
 ### 🔮 Przyszłe Funkcje
-- ⏱️ **Integracja z zegarem meczu** - synchronizacja z zewnętrznym timerem
+- ✅ ~~**Zegar meczu**~~ - Zaimplementowano (10-min countdown, custom time)
 - 📊 **Rozszerzone statystyki** - asysy, przejęcia, bloki, celność FG
 - 🌐 **Multi-device sync** - opcjonalna synchronizacja przez cloud
 - 📱 **PWA (Progressive Web App)** - instalacja jako aplikacja mobilna
@@ -281,17 +292,18 @@ FIBA/
 - Fallback: użyj ikony 🏀/💺 w zakładce Setup do ręcznej zmiany
 ## Licencja i Wsparcie
 
-**Licencja**: Aplikacja stworzona dla FIBA. Używaj zgodnie z regulaminem organizacji.
+**Licencja**: Aplikacja stworzona dla LALK. Używaj zgodnie z regulaminem organizacji.
 
 **Kontakt**: W razie problemów technicznych lub propozycji funkcjonalności, skontaktuj się z deweloperem.
 
 **Changelog**:
-- **v2.0** (Grudzień 2024): Refaktoryzacja modułowa + drag & drop substitutions
-- **v1.0** (Grudzień 2024): Wersja początkowa z pełnym protokołem meczu
+- **v2.1** (Grudzień 2025): Zegar gry + akcje oczekujące + reset fauli co kwartę
+- **v2.0** (Grudzień 2025): Refaktoryzacja modułowa + drag & drop substitutions
+- **v1.0** (Grudzień 2025): Wersja początkowa z pełnym protokołem meczu
 
 ---
 
-**Wersja**: 2.0  
-**Data ostatniej aktualizacji**: Grudzień 22, 2025  
-**Deweloper**: GitHub Copilot (AI)  
-**Stack**: Vue.js 3 Production, HTML5, CSS3 Grid/Flexbox, LocalStorage API
+**Wersja**: 2.1  
+**Data ostatniej aktualizacji**: Grudzień 23, 2025  
+**Deweloper**: Łukasz Nowak + GitHub Copilot (AI)  
+**Stack**: Vue.js 3 Production, HTML5, CSS3 Grid/Flexbox, LocalStorage API, Custom Fonts

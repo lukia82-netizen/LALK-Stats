@@ -157,12 +157,22 @@
                             </div>
                             
                             <!-- Action Buttons -->
-                            <div class="action-grid">
-                                <button class="action-btn points-1" @click="addPoints(teamId, 1)">🎯 +1</button>
-                                <button class="action-btn points-2" @click="addPoints(teamId, 2)">🏀 +2</button>
-                                <button class="action-btn points-3" @click="addPoints(teamId, 3)">🚀 +3</button>
-                                <button class="action-btn foul" @click="addFoul(teamId)">⚠️ Foul</button>
-                                <button class="action-btn free-throw" @click="addFreeThrow(teamId, false)">❌ FT Miss</button>
+                            <div class="action-grid" @click.stop>
+                                <button class="action-btn points-1" 
+                                        :class="{pending: isPendingAction(teamId, 'points', 1)}"
+                                        @click="addPoints(teamId, 1)">🎯 +1</button>
+                                <button class="action-btn points-2" 
+                                        :class="{pending: isPendingAction(teamId, 'points', 2)}"
+                                        @click="addPoints(teamId, 2)">🏀 +2</button>
+                                <button class="action-btn points-3" 
+                                        :class="{pending: isPendingAction(teamId, 'points', 3)}"
+                                        @click="addPoints(teamId, 3)">🚀 +3</button>
+                                <button class="action-btn foul" 
+                                        :class="{pending: isPendingAction(teamId, 'foul', null)}"
+                                        @click="addFoul(teamId)">⚠️ Foul</button>
+                                <button class="action-btn free-throw" 
+                                        :class="{pending: isPendingAction(teamId, 'freeThrow', false)}"
+                                        @click="addFreeThrow(teamId, false)">❌ FT Miss</button>
                                 <button class="action-btn" 
                                         style="background: #ff9800; color: white;"
                                         @click="addTimeout(teamId)"
@@ -172,7 +182,7 @@
                             </div>
 
                             <!-- Player Sections: On Court & Reserves -->
-                            <div class="player-sections-container">
+                            <div class="player-sections-container" @click.stop>
                                 <!-- On Court Section -->
                                 <div class="player-section"
                                      @drop="dropOnCourt(teamId, $event)"

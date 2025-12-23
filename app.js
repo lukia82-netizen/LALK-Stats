@@ -233,7 +233,10 @@ createApp({
             // === DRAG AND DROP STATE ===
             draggedPlayer: null,
             draggedTeam: null,
-            draggedIndex: null
+            draggedIndex: null,
+
+            // === PENDING ACTION STATE ===
+            pendingAction: null
         };
     },
 
@@ -290,6 +293,11 @@ createApp({
             const player = teamData.players[index];
             if (player) {
                 this.selectedPlayer = { ...player, team };
+                
+                // Apply pending action if exists
+                if (this.pendingAction) {
+                    this.executePendingAction();
+                }
             }
         },
 
@@ -297,6 +305,23 @@ createApp({
             return this.selectedPlayer && 
                    this.selectedPlayer.team === team && 
                    this.selectedPlayer.number == player.number;
+        },
+
+        isPendingAction(team, type, value) {
+            if (!this.pendingAction) return false;
+            if (this.pendingAction.team !== team) return false;
+            if (this.pendingAction.type !== type) return false;
+            
+            // For points, check the value matches
+            if (type === 'points') {
+                return this.pendingAction.points === value;
+            }
+            // For freeThrow, check if made/missed matches
+            if (type === 'freeThrow') {
+                return this.pendingAction.made === value;
+            }
+            // For foul, just check type and team (already done above)
+            return true;
         },
 
         // ============================================
@@ -481,8 +506,18 @@ createApp({
         // SCORING ACTIONS
         // ============================================
         addPoints(team, points) {
+            // If no player selected, store as pending action
+            if (!this.selectedPlayer) {
+                this.pendingAction = {
+                    type: 'points',
+                    team,
+                    points
+                };
+                return;
+            }
+            
             // Prevent adding points to opposite team's player
-            if (this.selectedPlayer && this.selectedPlayer.team !== team) {
+            if (this.selectedPlayer.team !== team) {
                 alert('Cannot add points for opposite team\'s player!');
                 return;
             }
@@ -505,8 +540,17 @@ createApp({
         },
 
         addFoul(team) {
+            // If no player selected, store as pending action
+            if (!this.selectedPlayer) {
+                this.pendingAction = {
+                    type: 'foul',
+                    team
+                };
+                return;
+            }
+            
             // Prevent adding foul to opposite team's player
-            if (this.selectedPlayer && this.selectedPlayer.team !== team) {
+            if (this.selectedPlayer.team !== team) {
                 alert('Cannot add foul for opposite team\'s player!');
                 return;
             }
@@ -527,8 +571,18 @@ createApp({
         },
 
         addFreeThrow(team, made) {
+            // If no player selected, store as pending action
+            if (!this.selectedPlayer) {
+                this.pendingAction = {
+                    type: 'freeThrow',
+                    team,
+                    made
+                };
+                return;
+            }
+            
             // Prevent adding free throw to opposite team's player
-            if (this.selectedPlayer && this.selectedPlayer.team !== team) {
+            if (this.selectedPlayer.team !== team) {
                 alert('Cannot add free throw for opposite team\'s player!');
                 return;
             }
@@ -700,6 +754,65 @@ createApp({
         },
 
         // ============================================
+        // PENDING ACTION EXECUTION
+        // ============================================
+        executePendingAction() {
+            if (!this.pendingAction || !this.selectedPlayer) return;
+            
+            const action = { ...this.pendingAction };
+            
+            // Clear pending action BEFORE executing to prevent conflicts
+            this.pendingAction = null;
+            
+            // Check if selected player is from the correct team
+            if (this.selectedPlayer.team !== action.team) {
+                alert('Cannot apply action to opposite team\'s player!');
+                this.selectedPlayer = null;
+                return;
+            }
+            
+            // Execute the pending action directly without calling the original methods
+            // to avoid the selectedPlayer check
+            const teamData = this.getTeam(action.team);
+            
+            if (action.type === 'points') {
+                teamData.addPoints(action.points);
+                const actionName = action.points === 3 ? '3-Point FG' : action.points === 2 ? '2-Point FG' : '1-Point';
+                this.logAction({
+                    team: action.team,
+                    teamName: teamData.name,
+                    action: actionName,
+                    player: this.selectedPlayer,
+                    period: this.currentPeriod,
+                    points: action.points
+                });
+            } else if (action.type === 'foul') {
+                teamData.addFoul();
+                this.logAction({
+                    team: action.team,
+                    teamName: teamData.name,
+                    action: ACTION_TYPES.FOUL,
+                    player: this.selectedPlayer,
+                    period: this.currentPeriod
+                });
+            } else if (action.type === 'freeThrow') {
+                teamData.addFreeThrow(action.made);
+                const actionName = action.made ? ACTION_TYPES.FREE_THROW_MADE : ACTION_TYPES.FREE_THROW_MISSED;
+                this.logAction({
+                    team: action.team,
+                    teamName: teamData.name,
+                    action: actionName,
+                    player: this.selectedPlayer,
+                    period: this.currentPeriod,
+                    points: action.made ? POINT_VALUES.FREE_THROW : 0
+                });
+            }
+            
+            this.selectedPlayer = null;
+            this.saveToLocalStorage();
+        },
+
+        // ============================================
         // PLAYER SELECTION
         // ============================================
         selectPlayer(team, player) {
@@ -708,6 +821,7 @@ createApp({
 
         cancelSelection() {
             this.selectedPlayer = null;
+            this.pendingAction = null;
         },
 
         // ============================================

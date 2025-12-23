@@ -406,6 +406,23 @@ body {
     background: #d97706;
 }
 
+.action-btn.pending {
+    background: #fbbf24 !important;
+    border: 3px solid #f59e0b;
+    color: #000 !important;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(251, 191, 36, 0.9);
+    }
+}
+
 /* === PLAYER SECTIONS CONTAINER === */
 .player-sections-container {
     margin-top: 15px;
