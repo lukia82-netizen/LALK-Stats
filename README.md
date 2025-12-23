@@ -26,17 +26,27 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
 #### 🏀 Prowadzenie Meczu
 - **Punktacja**: +1, +2, +3 punkty z ikonami (🎯 🏀 🚀)
 - **Faule**: Osobiste i zespołowe z licznikiem (⚠️) - resetowane co kwartę
-- **Rzuty wolne**: Niecelne z ikoną (❌)
+- **System 5 fauli**: Automatyczna dyskwalifikacja gracza po 5 faulach
+  - Gracz automatycznie schodzi z boiska
+  - Niemożliwość ponownego wejścia na boisko
+  - Dźwięk gwizdka przy 5. faulu
+  - Wizualne oznaczenie (❌5, czerwona ramka, przekreślenie)
+  - Przeniesienie na koniec ławki rezerwowych
+  - Wsparcie undo: odwołanie 5. faula przywraca gracza do gry
+- **Rzuty wolne**: Celne (+1 pkt) i niecelne z ikoną (❌)
 - **Timeouty**: Limit 5 na mecz z kontrolą dostępności (⏸️)
 - **4 kwarty**: Pełne wsparcie z przełączaniem (Q1-Q4), automatyczny reset fauli
 - **Zegar meczu**: 10-minutowy odliczający timer z kontrolą start/pause/reset
 - **Niestandardowy czas**: Podwójne kliknięcie zegara do ustawienia własnego czasu (MM:SS)
 - **Elastyczny workflow**: Wybierz zawodnika potem akcję LUB akcję potem zawodnika
 - **Akcje oczekujące**: Żółte podświetlenie akcji czekających na wybór zawodnika
-- **Anulowanie**: Kliknij poza obszarem graczy aby anulować wybór/akcję
+- **Anulowanie**: Kliknij ESC lub ponownie tego samego zawodnika aby anulować wybór/akcję
 
 #### 👥 Zmiany Zawodników (NOWE!)
-- **Drag & Drop**: Przeciągnij zawodnika i upuść na innego aby zamienić pozycje
+- **Kliknięcie**: Kliknij gracza → kliknij innego gracza z tej samej drużyny → automatyczna wymiana
+- **Drag & Drop**: Przeciągnij zawodnika i upuść na innego aby zamienić pozycje (alternatywna metoda)
+- **Blokada wykluczonych**: Gracze z 5 faulami nie mogą wchodzić na boisko
+- **Wizualne potwierdzenie**: Po wymianie obaj gracze podświetleni na **zielono** z efektem pulsowania (1.5s)
 - **Oznaczenia**: 🏀 ON COURT (5 max) | 💺 RESERVES
 - **Status w protokole**: 
   - ⭕ (O) - zawodnicy w składzie podstawowym
@@ -46,6 +56,7 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
 - **Wizualizacja**: Tylko nazwiska, duże przyciski (90×75px)
 - **Responsywność**: Optymalizacja dla ekranów dotykowych
 - **Brak przewijania**: Cała sekcja zawodników widoczna bez scrollowania
+- **Inteligentny wybór**: Ten sam przycisk służy do wyboru gracza dla akcji punktowej/faula/wymiany
 
 #### 📊 Statystyki Live
 - Wynik meczu w czasie rzeczywistym
@@ -108,11 +119,13 @@ Prowadzenie meczu na żywo:
    - Kliknij ⏸️ Pause aby zatrzymać
    - Kliknij 🔄 Reset aby wrócić do 10:00
    - Podwójnie kliknij zegar aby ustawić własny czas
-2. **Zarejestruj akcję** (dwa sposoby):
+2. **Zarejestruj akcję punktową/faul** (dwa sposoby):
    - **Klasycznie**: Wybierz zawodnika → Kliknij akcję (natychmiastowe wykonanie)
    - **Szybko**: Kliknij akcję (żółte podświetlenie) → Wybierz zawodnika (automatyczne wykonanie)
-3. **Anuluj akcję**: Kliknij poza obszarem graczy (na tle panelu zespołu)
-4. **Zmiany zawodników**: Przeciągnij zawodnika i upuść na innego (zamiana pozycji)
+3. **Zmiany zawodników** (dwa sposoby):
+   - **Kliknięcie**: Kliknij gracza (żółty) → Kliknij innego gracza z tej samej drużyny → wymiana z efektem zielonym
+   - **Drag & Drop**: Przeciągnij zawodnika i upuść na innego (zamiana pozycji)
+4. **Anuluj akcję**: Kliknij ESC lub tego samego zawodnika ponownie
 5. **Przełączanie kwart**: Przyciski Q1-Q4 (faule zespołowe resetowane automatycznie)
 6. **Monitoring**: Sprawdzaj Game Log na dole strony
 7. **Korekty**: Przycisk "Delete" przy każdej akcji w logu
@@ -254,13 +267,22 @@ FIBA/
 - Responsive design (Flexbox + CSS Grid)
 - Touch-optimized (przyciski 75px+ wysokości)
 - Keyboard navigation (pełne wsparcie)
-- Visual feedback (ikony, kolory, stany hover/active)
+- Visual feedback:
+  - 🟡 **Żółty** = gracz wybrany do akcji (punkty/faul/wymiana)
+  - 🟢 **Zielony z pulsem** = gracze właśnie wymienieni (1.5s animacja)
+  - 🔴 **Czerwony border** = gracz wykluczony (5 fauli)
+  - ⚠️ **Ostrzeżenie** = 4 faule
+  - Ikony, kolory, stany hover/active
 - Scrollable player sections (przyciski akcji zawsze widoczne)
+- Animacje CSS (pulse, scale, shadow) dla lepszej czytelności akcji
 
 ## Roadmap i Potencjalne Ulepszenia
 
 ### 🔮 Przyszłe Funkcje
 - ✅ ~~**Zegar meczu**~~ - Zaimplementowano (10-min countdown, custom time)
+- ✅ ~~**System 5 fauli**~~ - Zaimplementowano (automatyczna dyskwalifikacja, gwizdek, undo support)
+- ✅ ~~**Wymiana jednym kliknięciem**~~ - Zaimplementowano (inteligentny wybór gracza)
+- ✅ ~~**Animacje wymian**~~ - Zaimplementowano (zielony puls, visual feedback)
 - 📊 **Rozszerzone statystyki** - asysy, przejęcia, bloki, celność FG
 - 🌐 **Multi-device sync** - opcjonalna synchronizacja przez cloud
 - 📱 **PWA (Progressive Web App)** - instalacja jako aplikacja mobilna
@@ -328,6 +350,7 @@ FIBA/
 **Kontakt**: W razie problemów technicznych lub propozycji funkcjonalności, skontaktuj się z deweloperem.
 
 **Changelog**:
+- **v2.3** (Grudzień 2025): System wymian jednym kliknięciem + animacje po wymianie + 5-foul system + reaktywacja po undo
 - **v2.2** (Grudzień 2025): Blokada składu + status zawodników (O/X/--) + zespoły LALK + pozycje przycisków
 - **v2.1** (Grudzień 2025): Zegar gry + akcje oczekujące + reset fauli co kwartę
 - **v2.0** (Grudzień 2025): Refaktoryzacja modułowa + drag & drop substitutions
@@ -335,7 +358,7 @@ FIBA/
 
 ---
 
-**Wersja**: 2.2  
+**Wersja**: 2.3  
 **Data ostatniej aktualizacji**: Grudzień 23, 2025  
 **Deweloper**: Łukasz Nowak + GitHub Copilot (AI)  
-**Stack**: Vue.js 3 Production, HTML5, CSS3 Grid/Flexbox, LocalStorage API, Custom Fonts
+**Stack**: Vue.js 3 Production, HTML5, CSS3 Grid/Flexbox, LocalStorage API, Custom Fonts, CSS Animations

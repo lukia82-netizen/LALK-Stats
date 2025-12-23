@@ -101,7 +101,7 @@
                                     v-for="p in 4" 
                                     :key="p" 
                                     :class="{active: currentPeriod === p}"
-                                    @click="currentPeriod = p">
+                                    @click="currentPeriod = p; if (p === 1) possessionArrow = null">
                                 Q{{ p }}
                             </button>
                             <button class="period-btn" 
@@ -122,10 +122,14 @@
                             boxShadow: '0 4px 15px rgba(0,0,0,0.4), inset 0 0 30px rgba(0,255,0,0.1)',
                             border: gameClockRunning ? 'none' : '3px solid #ff0000',
                             transition: 'border 0.3s ease',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            position: 'relative'
                         }"
                              @dblclick="setCustomGameClock"
                              title="Double-click to set custom time">
+                            <div style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 18px; font-weight: 700; color: #00ff00; letter-spacing: 1px;">
+                                {{ periodDisplay }}
+                            </div>
                             <div style="font-size: 72px; font-weight: 700; font-family: 'TimesSquare', 'Impact', 'Arial Black', sans-serif; color: #00ff00; letter-spacing: 8px;">
                                 {{ String(gameClockMinutes).padStart(2, '0') }}:{{ String(gameClockSeconds).padStart(2, '0') }}
                             </div>
@@ -239,8 +243,8 @@
                                         <button v-for="(player, index) in team.players.filter(p => p.onCourt)" 
                                                 :key="'court-' + teamId.toLowerCase() + '-' + index"
                                                 class="player-btn"
-                                                :class="{selected: isPlayerSelected(teamId, player), 'high-fouls': getPlayerFouls(teamId, player.number) >= 4}"
-                                                draggable="true"
+                                                :class="{selected: isPlayerSelected(teamId, player), 'recently-swapped': isPlayerRecentlySwapped(teamId, player), 'high-fouls': getPlayerFouls(teamId, player.number) >= 4, 'fouled-out': getPlayerFouls(teamId, player.number) >= 5}"
+                                                :draggable="getPlayerFouls(teamId, player.number) < 5"
                                                 @dragstart="startDrag(teamId, team.players.indexOf(player), $event)"
                                                 @dragover.prevent
                                                 @drop="dropOnPlayer(teamId, team.players.indexOf(player), $event)"
@@ -248,9 +252,8 @@
                                                 @click.stop="selectPlayerByIndex(teamId, team.players.indexOf(player))">
                                             <span class="player-number">#{{ player.number }}</span>
                                             <span class="player-name">{{ getLastName(player.name) }}</span>
-                                            <span v-if="getPlayerFouls(teamId, player.number) >= 4" class="player-fouls">
-                                                ⚠️{{ getPlayerFouls(teamId, player.number) }}
-                                            </span>
+                                            <span v-if="getPlayerFouls(teamId, player.number) >= 5" class="player-fouls" style="background: #000; color: #fff;">❌5</span>
+                                            <span v-else-if="getPlayerFouls(teamId, player.number) >= 4" class="player-fouls">⚠️{{ getPlayerFouls(teamId, player.number) }}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -267,8 +270,8 @@
                                         <button v-for="(player, index) in team.players.filter(p => !p.onCourt)" 
                                                 :key="'bench-' + teamId.toLowerCase() + '-' + index"
                                                 class="player-btn"
-                                                :class="{selected: isPlayerSelected(teamId, player), 'high-fouls': getPlayerFouls(teamId, player.number) >= 4}"
-                                                draggable="true"
+                                                :class="{selected: isPlayerSelected(teamId, player), 'recently-swapped': isPlayerRecentlySwapped(teamId, player), 'high-fouls': getPlayerFouls(teamId, player.number) >= 4, 'fouled-out': getPlayerFouls(teamId, player.number) >= 5}"
+                                                :draggable="getPlayerFouls(teamId, player.number) < 5"
                                                 @dragstart="startDrag(teamId, team.players.indexOf(player), $event)"
                                                 @dragover.prevent
                                                 @drop="dropOnPlayer(teamId, team.players.indexOf(player), $event)"
@@ -276,9 +279,8 @@
                                                 @click.stop="selectPlayerByIndex(teamId, team.players.indexOf(player))">
                                             <span class="player-number">#{{ player.number }}</span>
                                             <span class="player-name">{{ getLastName(player.name) }}</span>
-                                            <span v-if="getPlayerFouls(teamId, player.number) >= 4" class="player-fouls">
-                                                ⚠️{{ getPlayerFouls(teamId, player.number) }}
-                                            </span>
+                                            <span v-if="getPlayerFouls(teamId, player.number) >= 5" class="player-fouls" style="background: #000; color: #fff;">❌5</span>
+                                            <span v-else-if="getPlayerFouls(teamId, player.number) >= 4" class="player-fouls">⚠️{{ getPlayerFouls(teamId, player.number) }}</span>
                                         </button>
                                     </div>
                                 </div>

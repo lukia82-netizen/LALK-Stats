@@ -488,6 +488,7 @@ body {
 }
 
 .player-btn {
+    position: relative;
     padding: 14px 10px;
     background: rgba(255, 255, 255, 0.3);
     border: 2px solid transparent;
@@ -519,9 +520,69 @@ body {
     box-shadow: 0 4px 12px rgba(251, 191, 36, 0.5);
 }
 
+.player-btn.recently-swapped {
+    background: #10b981;
+    border-color: #059669;
+    color: #fff;
+    animation: swap-pulse 1.5s ease-in-out;
+}
+
+@keyframes swap-pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+    }
+    25% {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.8);
+    }
+    50% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+    }
+    75% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.7);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+    }
+}
+
+.player-btn.substitution-selected {
+    background: #3b82f6;
+    border-color: #2563eb;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+    animation: pulse-sub 1.5s infinite;
+}
+
+@keyframes pulse-sub {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.8);
+    }
+}
+
 .player-btn.dragging {
     opacity: 0.5;
     transform: scale(0.95);
+}
+
+.player-btn.fouled-out {
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: 2px solid #dc2626;
+    opacity: 0.6;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
+
+.player-btn.fouled-out:hover {
+    background: rgba(0, 0, 0, 0.7) !important;
+    opacity: 0.6;
 }
 
 .player-section.drag-over {
@@ -923,11 +984,8 @@ body {
     padding: 2px 4px;
     border-radius: 4px;
     font-weight: 700;
-}
-
-.player-btn.high-fouls {
-    border: 2px solid #fbbf24;
-    background: rgba(251, 191, 36, 0.1);
+    white-space: nowrap;
+    line-height: 1.2;
 }
 
 .player-btn {

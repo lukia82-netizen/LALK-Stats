@@ -201,6 +201,13 @@ class Team {
         if (team.totalFouls === undefined) {
             team.totalFouls = team.fouls || 0;
         }
+        // Ensure free throw stats exist (backward compatibility)
+        if (team.freeThrowsMade === undefined) {
+            team.freeThrowsMade = 0;
+        }
+        if (team.freeThrowsTotal === undefined) {
+            team.freeThrowsTotal = 0;
+        }
         // Ensure onCourt property exists for all players (backward compatibility)
         if (team.players) {
             team.players = team.players.map(player => ({
@@ -263,6 +270,9 @@ createApp({
 
             // === PENDING ACTION STATE ===
             pendingAction: null,
+
+            // === RECENTLY SWAPPED PLAYERS ===
+            recentlySwappedPlayers: [], // [{team, number}]
 
             // === PRINT MODE STATE ===
             printMode: 'none', // 'none', 'minimal', 'full'
@@ -359,20 +369,99 @@ createApp({
         selectPlayerByIndex(team, index) {
             const teamData = this.getTeam(team);
             const player = teamData.players[index];
-            if (player) {
-                this.selectedPlayer = { ...player, team };
-                
-                // Apply pending action if exists
-                if (this.pendingAction) {
-                    this.executePendingAction();
-                }
+            if (!player) return;
+            
+            // Block if player has fouled out
+            if (player.fouledOut || this.getPlayerFouls(team, player.number) >= 5) {
+                alert(`Player #${player.number} has fouled out and cannot play!`);
+                return;
             }
+            
+            // If there's a pending action (points, foul, etc), execute it
+            if (this.pendingAction) {
+                this.selectedPlayer = { ...player, team };
+                this.executePendingAction();
+                return;
+            }
+            
+            // If another player is already selected from same team, try substitution
+            if (this.selectedPlayer && this.selectedPlayer.team === team && 
+                this.selectedPlayer.number != player.number) {
+                this.trySubstitution(team, index);
+                return;
+            }
+            
+            // If clicking same player, deselect
+            if (this.selectedPlayer && this.selectedPlayer.team === team && 
+                this.selectedPlayer.number == player.number) {
+                this.selectedPlayer = null;
+                return;
+            }
+            
+            // Otherwise just select this player
+            this.selectedPlayer = { ...player, team };
         },
 
         isPlayerSelected(team, player) {
             return this.selectedPlayer && 
                    this.selectedPlayer.team === team && 
                    this.selectedPlayer.number == player.number;
+        },
+
+        isPlayerRecentlySwapped(team, player) {
+            return this.recentlySwappedPlayers.some(p => 
+                p.team === team && p.number == player.number
+            );
+        },
+
+        trySubstitution(team, index) {
+            const teamData = this.getTeam(team);
+            const clickedPlayer = teamData.players[index];
+            const selectedPlayerObj = teamData.players.find(p => p.number === this.selectedPlayer.number);
+            
+            if (!selectedPlayerObj || !clickedPlayer) return;
+            
+            // Check if one is on court and one on bench
+            if (selectedPlayerObj.onCourt === clickedPlayer.onCourt) {
+                // Both in same location - just switch selection
+                this.selectedPlayer = { ...clickedPlayer, team };
+                return;
+            }
+            
+            // Valid substitution - swap them
+            const wasFirstOnCourt = selectedPlayerObj.onCourt;
+            const wasSecondOnCourt = clickedPlayer.onCourt;
+            
+            // Swap their onCourt status
+            selectedPlayerObj.onCourt = !selectedPlayerObj.onCourt;
+            clickedPlayer.onCourt = !clickedPlayer.onCourt;
+            
+            // Log substitution
+            const outPlayer = wasFirstOnCourt ? selectedPlayerObj : clickedPlayer;
+            const inPlayer = wasFirstOnCourt ? clickedPlayer : selectedPlayerObj;
+            
+            this.logAction({
+                team,
+                teamName: teamData.name,
+                action: `${ACTION_TYPES.SUBSTITUTION}: OUT #${outPlayer.number} ${outPlayer.name}, IN #${inPlayer.number} ${inPlayer.name}`,
+                player: { number: inPlayer.number, name: inPlayer.name },
+                period: this.currentPeriod
+            });
+            
+            // Highlight both players that were swapped
+            this.recentlySwappedPlayers = [
+                { team, number: selectedPlayerObj.number },
+                { team, number: clickedPlayer.number }
+            ];
+            
+            // Clear highlight after 1.5 seconds
+            setTimeout(() => {
+                this.recentlySwappedPlayers = [];
+            }, 1500);
+            
+            // Clear selection
+            this.selectedPlayer = null;
+            this.saveToLocalStorage();
         },
 
         isPendingAction(team, type, value) {
@@ -392,12 +481,23 @@ createApp({
             return true;
         },
 
+
+
         // ============================================
         // DRAG AND DROP FOR SUBSTITUTIONS
         // ============================================
         startDrag(team, index, event) {
             const teamData = this.getTeam(team);
-            this.draggedPlayer = teamData.players[index];
+            const player = teamData.players[index];
+            
+            // Block dragging if player has fouled out
+            if (player.fouledOut || this.getPlayerFouls(team, player.number) >= 5) {
+                event.preventDefault();
+                alert(`Player #${player.number} has fouled out and cannot play!`);
+                return;
+            }
+            
+            this.draggedPlayer = player;
             this.draggedTeam = team;
             this.draggedIndex = index;
             event.dataTransfer.effectAllowed = 'move';
@@ -458,6 +558,20 @@ createApp({
                 const teamData = this.getTeam(team);
                 const targetPlayer = teamData.players[targetIndex];
                 const draggedPlayer = this.draggedPlayer;
+                
+                // Block if dragged player has fouled out
+                if (draggedPlayer.fouledOut || this.getPlayerFouls(team, draggedPlayer.number) >= 5) {
+                    alert(`Player #${draggedPlayer.number} has fouled out and cannot play!`);
+                    this.clearDragState();
+                    return;
+                }
+                
+                // Block if target player has fouled out and we're trying to put them on court
+                if ((targetPlayer.fouledOut || this.getPlayerFouls(team, targetPlayer.number) >= 5) && draggedPlayer.onCourt) {
+                    alert(`Player #${targetPlayer.number} has fouled out and cannot enter the court!`);
+                    this.clearDragState();
+                    return;
+                }
                 
                 // Determine substitution type
                 const draggedWasOnCourt = draggedPlayer.onCourt;
@@ -554,6 +668,7 @@ createApp({
             this.gameLog = [];
             this.currentPeriod = 1;
             this.resetGameClock();
+            this.possessionArrow = null; // Reset possession to neutral
             this.saveToLocalStorage();
             alert('Game started! Good luck! Press Start to begin the clock.');
         },
@@ -600,17 +715,30 @@ createApp({
             }
             
             const teamData = this.getTeam(team);
-            teamData.addPoints(points);
             
-            const action = points === 3 ? '3-Point FG' : points === 2 ? '2-Point FG' : '1-Point';
-            this.logAction({
-                team,
-                teamName: teamData.name,
-                action,
-                player: this.selectedPlayer,
-                period: this.currentPeriod,
-                points
-            });
+            // If 1 point, treat as free throw
+            if (points === 1) {
+                teamData.addFreeThrow(true);
+                this.logAction({
+                    team,
+                    teamName: teamData.name,
+                    action: ACTION_TYPES.FREE_THROW_MADE,
+                    player: this.selectedPlayer,
+                    period: this.currentPeriod,
+                    points: 1
+                });
+            } else {
+                teamData.addPoints(points);
+                const action = points === 3 ? '3-Point FG' : '2-Point FG';
+                this.logAction({
+                    team,
+                    teamName: teamData.name,
+                    action,
+                    player: this.selectedPlayer,
+                    period: this.currentPeriod,
+                    points
+                });
+            }
 
             this.selectedPlayer = null;
             this.saveToLocalStorage();
@@ -632,6 +760,13 @@ createApp({
                 return;
             }
             
+            // Check if player already has 5 fouls
+            const playerFouls = this.getPlayerFouls(team, this.selectedPlayer.number);
+            if (playerFouls >= 5) {
+                alert(`Player #${this.selectedPlayer.number} already has 5 fouls and is disqualified!`);
+                return;
+            }
+            
             const teamData = this.getTeam(team);
             teamData.addFoul();
             
@@ -642,6 +777,28 @@ createApp({
                 player: this.selectedPlayer,
                 period: this.currentPeriod
             });
+            
+            // Check if player now has 5 fouls and disqualify them
+            if (playerFouls + 1 >= 5) {
+                const playerIndex = teamData.players.findIndex(p => p.number === this.selectedPlayer.number);
+                if (playerIndex !== -1) {
+                    const player = teamData.players[playerIndex];
+                    player.fouledOut = true;
+                    player.onCourt = false;
+                    
+                    // Move player to end of bench by sorting - fouled out players go last
+                    const removedPlayer = teamData.players.splice(playerIndex, 1)[0];
+                    teamData.players.push(removedPlayer);
+                    
+                    // Force Vue reactivity update
+                    this.$forceUpdate();
+                    
+                    // Play whistle sound
+                    this.playWhistle();
+                    
+                    alert(`Player #${this.selectedPlayer.number} has fouled out (5 fouls) and has been removed from the court!`);
+                }
+            }
 
             this.selectedPlayer = null;
             this.saveToLocalStorage();
@@ -891,6 +1048,37 @@ createApp({
             
             if (entry.action === ACTION_TYPES.FOUL) {
                 teamData.fouls = Math.max(0, teamData.fouls - 1);
+                
+                // Check if this was the player's 5th foul and reactivate them
+                if (entry.player) {
+                    const playerIndex = teamData.players.findIndex(p => p.number === entry.player.number);
+                    if (playerIndex !== -1) {
+                        const player = teamData.players[playerIndex];
+                        // Count remaining fouls for this player after deletion
+                        const remainingFouls = this.gameLog.filter((e, i) => 
+                            i !== actualIndex && 
+                            e.team === entry.team && 
+                            e.player && 
+                            e.player.number === entry.player.number &&
+                            e.action === ACTION_TYPES.FOUL
+                        ).length;
+                        
+                        // If player was fouled out but now has less than 5 fouls, reactivate
+                        if (player.fouledOut && remainingFouls < 5) {
+                            player.fouledOut = false;
+                            
+                            // Move player back from end of bench - sort so fouled-out players are at the end
+                            teamData.players.sort((a, b) => {
+                                // Fouled out players go to the end
+                                if (a.fouledOut && !b.fouledOut) return 1;
+                                if (!a.fouledOut && b.fouledOut) return -1;
+                                return 0; // Maintain relative order within each group
+                            });
+                            
+                            this.$forceUpdate();
+                        }
+                    }
+                }
             }
             
             if (entry.action === ACTION_TYPES.FREE_THROW_MADE) {
@@ -938,17 +1126,39 @@ createApp({
             const teamData = this.getTeam(action.team);
             
             if (action.type === 'points') {
-                teamData.addPoints(action.points);
-                const actionName = action.points === 3 ? '3-Point FG' : action.points === 2 ? '2-Point FG' : '1-Point';
-                this.logAction({
-                    team: action.team,
-                    teamName: teamData.name,
-                    action: actionName,
-                    player: this.selectedPlayer,
-                    period: this.currentPeriod,
-                    points: action.points
-                });
+                // If 1 point, treat as free throw
+                if (action.points === 1) {
+                    teamData.addFreeThrow(true);
+                    this.logAction({
+                        team: action.team,
+                        teamName: teamData.name,
+                        action: ACTION_TYPES.FREE_THROW_MADE,
+                        player: this.selectedPlayer,
+                        period: this.currentPeriod,
+                        points: 1
+                    });
+                } else {
+                    teamData.addPoints(action.points);
+                    const actionName = action.points === 3 ? '3-Point FG' : '2-Point FG';
+                    this.logAction({
+                        team: action.team,
+                        teamName: teamData.name,
+                        action: actionName,
+                        player: this.selectedPlayer,
+                        period: this.currentPeriod,
+                        points: action.points
+                    });
+                }
             } else if (action.type === 'foul') {
+                // Check if player already has 5 fouls
+                const playerFouls = this.getPlayerFouls(action.team, this.selectedPlayer.number);
+                if (playerFouls >= 5) {
+                    alert(`Player #${this.selectedPlayer.number} already has 5 fouls and is disqualified!`);
+                    this.selectedPlayer = null;
+                    this.pendingAction = null;
+                    return;
+                }
+                
                 teamData.addFoul();
                 this.logAction({
                     team: action.team,
@@ -957,6 +1167,28 @@ createApp({
                     player: this.selectedPlayer,
                     period: this.currentPeriod
                 });
+                
+                // Check if player now has 5 fouls and disqualify them
+                if (playerFouls + 1 >= 5) {
+                    const playerIndex = teamData.players.findIndex(p => p.number === this.selectedPlayer.number);
+                    if (playerIndex !== -1) {
+                        const player = teamData.players[playerIndex];
+                        player.fouledOut = true;
+                        player.onCourt = false;
+                        
+                        // Move player to end of bench by sorting - fouled out players go last
+                        const removedPlayer = teamData.players.splice(playerIndex, 1)[0];
+                        teamData.players.push(removedPlayer);
+                        
+                        // Force Vue reactivity update
+                        this.$forceUpdate();
+                        
+                        // Play whistle sound
+                        this.playWhistle();
+                        
+                        alert(`Player #${this.selectedPlayer.number} has fouled out (5 fouls) and has been removed from the court!`);
+                    }
+                }
             } else if (action.type === 'freeThrow') {
                 teamData.addFreeThrow(action.made);
                 const actionName = action.made ? ACTION_TYPES.FREE_THROW_MADE : ACTION_TYPES.FREE_THROW_MISSED;
@@ -1149,6 +1381,29 @@ createApp({
             }
         },
 
+        playWhistle() {
+            // Create audio context and play whistle sound (higher pitch, shorter duration)
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 2000; // Hz - higher pitch for whistle
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                console.log('Audio not supported:', e);
+            }
+        },
+
         // ============================================
         // CSV EXPORT
         // ============================================
@@ -1283,7 +1538,10 @@ createApp({
                 teamA: this.teamA.toJSON(),
                 teamB: this.teamB.toJSON(),
                 gameLog: this.gameLog,
-                currentPeriod: this.currentPeriod
+                currentPeriod: this.currentPeriod,
+                gameClockMinutes: this.gameClockMinutes,
+                gameClockSeconds: this.gameClockSeconds,
+                possessionArrow: this.possessionArrow
             };
             localStorage.setItem('basketballGame', JSON.stringify(gameData));
         },
@@ -1298,6 +1556,9 @@ createApp({
                 this.teamB = Team.fromJSON(data.teamB);
                 this.gameLog = data.gameLog || [];
                 this.currentPeriod = data.currentPeriod || 1;
+                this.gameClockMinutes = data.gameClockMinutes !== undefined ? data.gameClockMinutes : 10;
+                this.gameClockSeconds = data.gameClockSeconds !== undefined ? data.gameClockSeconds : 0;
+                this.possessionArrow = data.possessionArrow !== undefined ? data.possessionArrow : null;
                 
                 if (this.teamA.name && this.teamB.name) {
                     this.gameReady = true;
@@ -1426,13 +1687,9 @@ createApp({
         // Add keyboard event listener
         window.addEventListener('keydown', this.handleKeyPress);
         
-        // Add beforeunload warning for unsaved changes
-        window.addEventListener('beforeunload', (e) => {
-            if (this.gameLog.length > 0) {
-                e.preventDefault();
-                e.returnValue = 'You have an active game. Are you sure you want to leave?';
-                return e.returnValue;
-            }
+        // Save data before page unload
+        window.addEventListener('beforeunload', () => {
+            this.saveToLocalStorage();
         });
     },
 
