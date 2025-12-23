@@ -143,9 +143,17 @@
                             
                             <!-- Team Stats Grid -->
                             <div class="stats-grid">
-                                <div class="stat-card">
+                                <div class="stat-card" :style="{
+                                    background: (teamId === 'A' ? teamAFoulStatus : teamBFoulStatus) === 'BONUS' ? '#dc2626' : 
+                                               (teamId === 'A' ? teamAFoulStatus : teamBFoulStatus) === 'WARNING' ? '#fbbf24' : 'rgba(255, 255, 255, 0.2)',
+                                    color: (teamId === 'A' ? teamAFoulStatus : teamBFoulStatus) === 'BONUS' || (teamId === 'A' ? teamAFoulStatus : teamBFoulStatus) === 'WARNING' ? 'white' : 'inherit'
+                                }">
                                     <div class="stat-label">Fouls</div>
-                                    <div class="stat-value">{{ team.fouls }}</div>
+                                    <div class="stat-value">
+                                        <span v-if="(teamId === 'A' ? teamAFoulStatus : teamBFoulStatus) === 'BONUS'" style="font-size: 24px;">⚠️</span>
+                                        <span v-else-if="(teamId === 'A' ? teamAFoulStatus : teamBFoulStatus) === 'WARNING'" style="font-size: 24px;">⚠️</span>
+                                        {{ team.fouls }}
+                                    </div>
                                 </div>
                                 <div class="stat-card">
                                     <div class="stat-label">FT Made</div>
@@ -304,7 +312,7 @@
                                     </tr>
                                     <tr>
                                         <td style="text-align: left; padding-left: 8px; font-size: 10px;">Team Fouls</td>
-                                        <td style="font-size: 10px;">{{ team.fouls }}</td>
+                                        <td style="font-size: 10px;">{{ team.totalFouls }}</td>
                                     </tr>
                                     <tr>
                                         <td style="text-align: left; padding-left: 8px; font-size: 10px;">Free Throws</td>
@@ -342,7 +350,7 @@
                                     <tr style="background: #e3f2fd; font-weight: 700; font-size: 10px;">
                                         <td colspan="2">TOTAL</td>
                                         <td><strong>{{ team.score }}</strong></td>
-                                        <td>{{ team.fouls }}</td>
+                                        <td>{{ team.totalFouls }}</td>
                                         <td>{{ team.freeThrowsMade }}/{{ team.freeThrowsTotal }}</td>
                                         <td>{{ calculateFreeThrowPercentage(teamId) }}</td>
                                     </tr>
@@ -434,7 +442,7 @@
                                         <tr style="background: #e3f2fd; font-weight: 700;">
                                             <td colspan="3">TOTAL</td>
                                             <td><strong>{{ team.score }}</strong></td>
-                                            <td>{{ team.fouls }}</td>
+                                            <td>{{ team.totalFouls }}</td>
                                             <td>{{ team.freeThrowsMade }}/{{ team.freeThrowsTotal }}</td>
                                             <td>{{ calculateFreeThrowPercentage(teamId) }}</td>
                                         </tr>
@@ -484,7 +492,7 @@
                             <div v-for="(team, teamId) in {A: teamA, B: teamB}" :key="teamId" class="protocol-summary-box">
                                 <h3>{{ team.name }}</h3>
                                 <p><strong>Points:</strong> {{ team.score }}</p>
-                                <p><strong>Team Fouls:</strong> {{ team.fouls }}</p>
+                                <p><strong>Team Fouls:</strong> {{ team.totalFouls }}</p>
                                 <p><strong>Free Throws:</strong> {{ team.freeThrowsMade }}/{{ team.freeThrowsTotal }} ({{ calculateFreeThrowPercentage(teamId) }}%)</p>
                             </div>
                         </div>

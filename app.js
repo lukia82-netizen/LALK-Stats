@@ -76,7 +76,8 @@ class Team {
     constructor(name = '', isHomeTeam = true) {
         this.name = name;
         this.score = 0;
-        this.fouls = 0;
+        this.fouls = 0; // Quarter fouls (reset each quarter, max 5 for display)
+        this.totalFouls = 0; // Total fouls for entire game (for protocol)
         this.freeThrowsMade = 0;
         this.freeThrowsTotal = 0;
         this.players = [];
@@ -111,7 +112,10 @@ class Team {
     }
 
     addFoul() {
-        this.fouls++;
+        if (this.fouls < 5) {
+            this.fouls++; // Quarter fouls (capped at 5)
+        }
+        this.totalFouls++; // Total game fouls (unlimited)
     }
 
     addFreeThrow(made) {
@@ -156,6 +160,7 @@ class Team {
     reset() {
         this.score = 0;
         this.fouls = 0;
+        this.totalFouls = 0;
         this.freeThrowsMade = 0;
         this.freeThrowsTotal = 0;
         this.timeouts = { firstHalf: 0, secondHalf: 0 };
@@ -166,6 +171,7 @@ class Team {
             name: this.name,
             score: this.score,
             fouls: this.fouls,
+            totalFouls: this.totalFouls,
             freeThrowsMade: this.freeThrowsMade,
             freeThrowsTotal: this.freeThrowsTotal,
             players: this.players,
@@ -248,6 +254,19 @@ createApp({
         canStartGame() {
             return this.teamA.name && this.teamB.name && 
                    this.teamA.players.length > 0 && this.teamB.players.length > 0;
+        },
+
+        // === TEAM FOUL STATUS ===
+        teamAFoulStatus() {
+            if (this.teamA.fouls >= 5) return 'BONUS';
+            if (this.teamA.fouls === 4) return 'WARNING';
+            return 'OK';
+        },
+        
+        teamBFoulStatus() {
+            if (this.teamB.fouls >= 5) return 'BONUS';
+            if (this.teamB.fouls === 4) return 'WARNING';
+            return 'OK';
         },
 
         // === DATE & TIME ===
