@@ -236,7 +236,10 @@ createApp({
             draggedIndex: null,
 
             // === PENDING ACTION STATE ===
-            pendingAction: null
+            pendingAction: null,
+
+            // === PRINT MODE STATE ===
+            printMode: 'none' // 'none', 'minimal', 'full'
         };
     },
 
@@ -979,14 +982,20 @@ createApp({
         // ============================================
         printProtocol() {
             this.currentView = 'protocol';
-            setTimeout(() => window.print(), 100);
+            this.printMode = 'minimal';
+            setTimeout(() => {
+                window.print();
+                this.printMode = 'none';
+            }, 100);
         },
 
         exportToPDF() {
             this.currentView = 'protocol';
+            this.printMode = 'full';
             setTimeout(() => {
                 alert('Use your browser\'s Print function and select "Save as PDF"');
                 window.print();
+                this.printMode = 'none';
             }, 100);
         },
 

@@ -51,9 +51,10 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
 - Nagłówek z datą i finałowym wynikiem
 - Tabela wyników kwartalnych
 - Statystyki zawodników obu zespołów
-- Szczegółowy log meczu podzielony na połowy
+- **Druk minimalny** (🖨️ Print): Podstawowe info pasujące na A4
+- **Pełny PDF** (📸 PDF): Kompletny protokół z logiem meczu i podsumowaniem
 - Miejsce na podpisy sędziów i komisarza
-- Export do PDF przez przeglądarkę
+- Export przez przeglądarkę
 
 #### ⌨️ Skróty Klawiszowe
 - **Q/W/E**: +1/+2/+3 pkt dla Zespołu A
@@ -116,8 +117,16 @@ Podgląd statystyk w trakcie meczu:
 #### 4. Protocol (📋 zakładka)
 Oficjalny dokument końcowy:
 - Automatyczne generowanie po zakończeniu meczu
-- **🖨️ Print**: Wydruk bezpośrednio z przeglądarki
-- **📸 PDF**: File → Print → Save as PDF
+- **🖨️ Print (Minimalny)**: Wydruk podstawowych informacji na A4
+  - Wyniki kwartalne
+  - Statystyki zawodników
+  - Miejsce na podpisy
+- **📸 PDF (Pełny)**: Kompletny protokół do archiwizacji
+  - Wszystko z wersji minimalnej
+  - Finałowy wynik
+  - Szczegółowy log meczu (obie połowy)
+  - Podsumowanie statystyk
+  - File → Print → Save as PDF
 
 ## Przykładowe Pliki
 
@@ -279,6 +288,8 @@ FIBA/
 ### 🖨️ Problem: Drukowanie/PDF wygląda źle
 **Rozwiązania**:
 - Przejdź do zakładki Protocol przed drukowaniem
+- **Dla druku**: Użyj przycisku 🖨️ Print (wersja minimalna, pasuje na A4)
+- **Dla PDF**: Użyj przycisku 📸 PDF (wersja pełna z logiem meczu)
 - W oknie drukowania wybierz orientację: Portrait
 - Ustaw marginesy: Default lub None
 - Wyłącz "Headers and footers"

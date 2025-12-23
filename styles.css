@@ -767,17 +767,29 @@ body {
 
     .header,
     .tabs,
-    .header-controls,
-    .protocol-game-log-section,
-    .protocol-game-log-content,
-    .protocol-summary,
-    .protocol-final-score {
+    .header-controls {
         display: none !important;
     }
 
     .container {
         box-shadow: none;
         border-radius: 0;
+    }
+
+    /* MINIMAL PRINT MODE - Only essential info for A4 */
+    .container.print-minimal .protocol-game-log-section,
+    .container.print-minimal .protocol-game-log-content,
+    .container.print-minimal .protocol-summary,
+    .container.print-minimal .protocol-final-score {
+        display: none !important;
+    }
+
+    /* FULL PDF MODE - Show everything */
+    .container.print-full .protocol-game-log-section,
+    .container.print-full .protocol-game-log-content,
+    .container.print-full .protocol-summary,
+    .container.print-full .protocol-final-score {
+        display: block !important;
     }
 
     .protocol-container {
