@@ -236,6 +236,11 @@ createApp({
             gameClockRunning: false,
             gameClockInterval: null,
 
+            // === TIMEOUT TIMER ===
+            timeoutTeam: null, // 'A' or 'B'
+            timeoutSeconds: 60,
+            timeoutInterval: null,
+
             // === DRAG AND DROP STATE ===
             draggedPlayer: null,
             draggedTeam: null,
@@ -304,6 +309,13 @@ createApp({
 
         removePlayer(team, index) {
             this.getTeam(team).removePlayer(index);
+        },
+
+        clearAllPlayers(team) {
+            if (confirm(`Are you sure you want to remove all players from ${this.getTeam(team).name || 'Team ' + team}?`)) {
+                this.getTeam(team).players = [];
+                this.saveToLocalStorage();
+            }
         },
 
         togglePlayerCourt(team, index) {
@@ -653,6 +665,9 @@ createApp({
                 period: this.currentPeriod
             });
 
+            // Start timeout timer
+            this.startTimeoutTimer(team);
+
             this.saveToLocalStorage();
         },
 
@@ -661,6 +676,9 @@ createApp({
         // ============================================
         startGameClock() {
             if (this.gameClockRunning) return;
+            
+            // Stop timeout timer when starting game clock
+            this.stopTimeoutTimer();
             
             this.gameClockRunning = true;
             this.gameClockInterval = setInterval(() => {
@@ -739,6 +757,41 @@ createApp({
         },
 
         // ============================================
+        // TIMEOUT TIMER
+        // ============================================
+        startTimeoutTimer(team) {
+            // Clear any existing timeout timer
+            this.stopTimeoutTimer();
+            
+            // Set timeout team and reset to 60 seconds
+            this.timeoutTeam = team;
+            this.timeoutSeconds = 60;
+            
+            // Pause game clock if running
+            if (this.gameClockRunning) {
+                this.pauseGameClock();
+            }
+            
+            // Start countdown
+            this.timeoutInterval = setInterval(() => {
+                this.timeoutSeconds--;
+                
+                if (this.timeoutSeconds <= 0) {
+                    this.stopTimeoutTimer();
+                }
+            }, 1000);
+        },
+
+        stopTimeoutTimer() {
+            if (this.timeoutInterval) {
+                clearInterval(this.timeoutInterval);
+                this.timeoutInterval = null;
+            }
+            this.timeoutTeam = null;
+            this.timeoutSeconds = 60;
+        },
+
+        // ============================================
         // GAME LOG
         // ============================================
         logAction(data) {
@@ -782,6 +835,11 @@ createApp({
             if (entry.action === ACTION_TYPES.TIMEOUT) {
                 const isFirstHalf = Utils.isFirstHalf(entry.period);
                 teamData.removeTimeout(isFirstHalf);
+                
+                // Stop timeout timer if this team's timeout is currently active
+                if (this.timeoutTeam === entry.team) {
+                    this.stopTimeoutTimer();
+                }
             }
 
             this.gameLog.splice(actualIndex, 1);

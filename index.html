@@ -67,7 +67,10 @@
                                     <input type="text" v-model="player.name" placeholder="Player Name">
                                     <button class="btn btn-danger btn-small" @click="removePlayer(teamId, index)">✕</button>
                                 </div>
-                                <button class="btn btn-primary btn-small" @click="addPlayer(teamId)">+ Add Player</button>
+                                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                    <button class="btn btn-primary btn-small" @click="addPlayer(teamId)">+ Add Player</button>
+                                    <button class="btn btn-danger btn-small" @click="clearAllPlayers(teamId)" v-if="team.players.length > 0">🗑️ Clear All</button>
+                                </div>
                             </div>
 
                             <div class="file-import">
@@ -140,6 +143,22 @@
                              @click="cancelSelection">
                             <div class="team-name">{{ team.name || 'Team ' + teamId }}</div>
                             <div class="score">{{ team.score }}</div>
+                            
+                            <!-- Timeout Timer (appears when timeout is active for this team) -->
+                            <transition name="fade">
+                                <div v-if="timeoutTeam === teamId" class="timeout-clock" :style="{
+                                    background: '#ff9800',
+                                    padding: '10px 15px',
+                                    borderRadius: '10px',
+                                    marginTop: '10px',
+                                    textAlign: 'center'
+                                }">
+                                    <div style="font-size: 10px; color: white; margin-bottom: 3px;">⏸️ TIMEOUT</div>
+                                    <div style="font-size: 36px; font-weight: 700; font-family: 'TimesSquare', 'Impact', 'Arial Black', sans-serif; color: white; letter-spacing: 4px;">
+                                        {{ String(Math.floor(timeoutSeconds / 60)).padStart(2, '0') }}:{{ String(timeoutSeconds % 60).padStart(2, '0') }}
+                                    </div>
+                                </div>
+                            </transition>
                             
                             <!-- Team Stats Grid -->
                             <div class="stats-grid">

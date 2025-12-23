@@ -91,6 +91,21 @@ body {
     cursor: not-allowed;
 }
 
+/* === VUE TRANSITIONS === */
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+}
+
+.fade-leave-to {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+}
+
 /* === BUTTONS === */
 .btn {
     padding: 12px 24px;
@@ -421,6 +436,21 @@ body {
     50% {
         box-shadow: 0 0 30px rgba(251, 191, 36, 0.9);
     }
+}
+
+@keyframes timeoutAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.timeout-clock {
+    animation: timeoutAppear 0.3s ease-out;
 }
 
 /* === PLAYER SECTIONS CONTAINER === */
