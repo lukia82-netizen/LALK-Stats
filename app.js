@@ -18,7 +18,7 @@ const POINT_VALUES = {
 const ACTION_TYPES = {
     POINTS: 'Points',
     FOUL: 'Foul',
-    FREE_THROW_MADE: 'FT Made',
+    FREE_THROW_MADE: '1 Point FT',
     FREE_THROW_MISSED: 'FT Missed',
     TIMEOUT: 'Timeout',
     SUBSTITUTION: 'Substitution'
@@ -454,7 +454,10 @@ createApp({
             this.gameReady = true;
             this.currentView = 'game';
             this.resetScores();
+            this.gameLog = [];
+            this.currentPeriod = 1;
             this.resetGameClock();
+            this.saveToLocalStorage();
             alert('Game started! Good luck! Press Start to begin the clock.');
         },
 
@@ -466,6 +469,7 @@ createApp({
             this.gameLog = [];
             this.currentPeriod = 1;
             this.resetGameClock();
+            this.saveToLocalStorage();
         },
 
         resetScores() {
@@ -477,6 +481,12 @@ createApp({
         // SCORING ACTIONS
         // ============================================
         addPoints(team, points) {
+            // Prevent adding points to opposite team's player
+            if (this.selectedPlayer && this.selectedPlayer.team !== team) {
+                alert('Cannot add points for opposite team\'s player!');
+                return;
+            }
+            
             const teamData = this.getTeam(team);
             teamData.addPoints(points);
             
@@ -495,6 +505,12 @@ createApp({
         },
 
         addFoul(team) {
+            // Prevent adding foul to opposite team's player
+            if (this.selectedPlayer && this.selectedPlayer.team !== team) {
+                alert('Cannot add foul for opposite team\'s player!');
+                return;
+            }
+            
             const teamData = this.getTeam(team);
             teamData.addFoul();
             
@@ -511,6 +527,12 @@ createApp({
         },
 
         addFreeThrow(team, made) {
+            // Prevent adding free throw to opposite team's player
+            if (this.selectedPlayer && this.selectedPlayer.team !== team) {
+                alert('Cannot add free throw for opposite team\'s player!');
+                return;
+            }
+            
             const teamData = this.getTeam(team);
             teamData.addFreeThrow(made);
             
@@ -582,12 +604,44 @@ createApp({
             this.gameClockSeconds = 0;
         },
 
+        setCustomGameClock() {
+            this.pauseGameClock();
+            
+            const timeInput = prompt('Enter time in MM:SS format (e.g., 10:00, 05:30):', 
+                `${String(this.gameClockMinutes).padStart(2, '0')}:${String(this.gameClockSeconds).padStart(2, '0')}`);
+            
+            if (timeInput === null) return; // User cancelled
+            
+            const parts = timeInput.trim().split(':');
+            if (parts.length !== 2) {
+                alert('Invalid format! Please use MM:SS format (e.g., 10:00)');
+                return;
+            }
+            
+            const minutes = parseInt(parts[0]);
+            const seconds = parseInt(parts[1]);
+            
+            if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) {
+                alert('Invalid time! Minutes must be >= 0 and seconds must be between 0-59.');
+                return;
+            }
+            
+            this.gameClockMinutes = minutes;
+            this.gameClockSeconds = seconds;
+        },
+
         onQuarterEnd() {
             if (this.currentPeriod < 4) {
                 if (confirm(`Quarter ${this.currentPeriod} ended! Start Quarter ${this.currentPeriod + 1}?`)) {
                     this.currentPeriod++;
                     this.resetGameClock();
-                    this.startGameClock();
+                    
+                    // Reset team fouls for new quarter
+                    this.teamA.fouls = 0;
+                    this.teamB.fouls = 0;
+                    
+                    this.saveToLocalStorage();
+                    alert(`Quarter ${this.currentPeriod} ready. Press Start to begin the clock.`);
                 }
             } else {
                 alert('Game Over! Final score: ' + this.teamA.name + ' ' + this.teamA.score + ' - ' + this.teamB.score + ' ' + this.teamB.name);

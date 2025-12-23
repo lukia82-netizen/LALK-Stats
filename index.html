@@ -107,8 +107,11 @@
                             borderRadius: '20px',
                             boxShadow: '0 4px 15px rgba(0,0,0,0.4), inset 0 0 30px rgba(0,255,0,0.1)',
                             border: gameClockRunning ? 'none' : '3px solid #ff0000',
-                            transition: 'border 0.3s ease'
-                        }">
+                            transition: 'border 0.3s ease',
+                            cursor: 'pointer'
+                        }"
+                             @dblclick="setCustomGameClock"
+                             title="Double-click to set custom time">
                             <div style="font-size: 72px; font-weight: 700; font-family: 'TimesSquare', 'Impact', 'Arial Black', sans-serif; color: #00ff00; letter-spacing: 8px;">
                                 {{ String(gameClockMinutes).padStart(2, '0') }}:{{ String(gameClockSeconds).padStart(2, '0') }}
                             </div>
@@ -132,7 +135,8 @@
                         <!-- Team Panels (A & B) -->
                         <div v-for="(team, teamId) in {A: teamA, B: teamB}" :key="teamId" 
                              class="score-panel"
-                             :class="'team-' + teamId.toLowerCase()">
+                             :class="'team-' + teamId.toLowerCase()"
+                             @click="cancelSelection">
                             <div class="team-name">{{ team.name || 'Team ' + teamId }}</div>
                             <div class="score">{{ team.score }}</div>
                             
@@ -152,6 +156,21 @@
                                 </div>
                             </div>
                             
+                            <!-- Action Buttons -->
+                            <div class="action-grid">
+                                <button class="action-btn points-1" @click="addPoints(teamId, 1)">🎯 +1</button>
+                                <button class="action-btn points-2" @click="addPoints(teamId, 2)">🏀 +2</button>
+                                <button class="action-btn points-3" @click="addPoints(teamId, 3)">🚀 +3</button>
+                                <button class="action-btn foul" @click="addFoul(teamId)">⚠️ Foul</button>
+                                <button class="action-btn free-throw" @click="addFreeThrow(teamId, false)">❌ FT Miss</button>
+                                <button class="action-btn" 
+                                        style="background: #ff9800; color: white;"
+                                        @click="addTimeout(teamId)"
+                                        :disabled="!canAddTimeout(teamId)">
+                                    ⏸️ TO ({{ getAvailableTimeouts(teamId) }})
+                                </button>
+                            </div>
+
                             <!-- Player Sections: On Court & Reserves -->
                             <div class="player-sections-container">
                                 <!-- On Court Section -->
@@ -171,7 +190,7 @@
                                                 @dragover.prevent
                                                 @drop="dropOnPlayer(teamId, team.players.indexOf(player), $event)"
                                                 @dragend="clearDragState"
-                                                @click="selectPlayerByIndex(teamId, team.players.indexOf(player))">
+                                                @click.stop="selectPlayerByIndex(teamId, team.players.indexOf(player))">
                                             <span class="player-number">#{{ player.number }}</span>
                                             <span class="player-name">{{ getLastName(player.name) }}</span>
                                         </button>
@@ -196,28 +215,12 @@
                                                 @dragover.prevent
                                                 @drop="dropOnPlayer(teamId, team.players.indexOf(player), $event)"
                                                 @dragend="clearDragState"
-                                                @click="selectPlayerByIndex(teamId, team.players.indexOf(player))">
+                                                @click.stop="selectPlayerByIndex(teamId, team.players.indexOf(player))">
                                             <span class="player-number">#{{ player.number }}</span>
                                             <span class="player-name">{{ getLastName(player.name) }}</span>
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Action Buttons -->
-                            <div class="action-grid">
-                                <button class="action-btn points-1" @click="addPoints(teamId, 1)">🎯 +1</button>
-                                <button class="action-btn points-2" @click="addPoints(teamId, 2)">🏀 +2</button>
-                                <button class="action-btn points-3" @click="addPoints(teamId, 3)">🚀 +3</button>
-                                <button class="action-btn foul" @click="addFoul(teamId)">⚠️ Foul</button>
-                                <button class="action-btn free-throw" @click="addFreeThrow(teamId, true)">✅ 1 Point</button>
-                                <button class="action-btn free-throw" @click="addFreeThrow(teamId, false)">❌ FT Miss</button>
-                                <button class="action-btn" 
-                                        style="background: #ff9800; color: white;"
-                                        @click="addTimeout(teamId)"
-                                        :disabled="!canAddTimeout(teamId)">
-                                    ⏸️ TO ({{ getAvailableTimeouts(teamId) }})
-                                </button>
                             </div>
                         </div>
                     </div>

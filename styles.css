@@ -300,7 +300,7 @@ body {
     font-size: 24px;
     font-weight: 700;
     margin-bottom: 15px;
-    font-family: 'TimesSquare', 'Impact', 'Arial Black', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .score {
@@ -308,7 +308,7 @@ body {
     font-weight: 900;
     line-height: 1;
     margin-bottom: 20px;
-    font-family: 'TimesSquare', 'Impact', 'Arial Black', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* === STATS GRID === */
