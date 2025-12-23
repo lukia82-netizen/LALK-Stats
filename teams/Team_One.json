@@ -1,0 +1,16 @@
+{
+  "name": "Team One",
+  "players": [
+    {"number": "25", "name": "Oskar Bąk", "onCourt": true},
+    {"number": "26", "name": "Artur Kaczmarek", "onCourt": true},
+    {"number": "32", "name": "Sebastian Janicki", "onCourt": true},
+    {"number": "38", "name": "Damian Pernak", "onCourt": true},
+    {"number": "47", "name": "Lech Maćkowiak", "onCourt": true},
+    {"number": "52", "name": "Bartosz Muszyński", "onCourt": false},
+    {"number": "60", "name": "Radosław Zuter", "onCourt": false},
+    {"number": "65", "name": "Bartosz Sosiński", "onCourt": false},
+    {"number": "66", "name": "Mariusz Wolny", "onCourt": false},
+    {"number": "98", "name": "Ireneusz Antonowicz", "onCourt": false},
+    {"number": "102", "name": "Marcin Cejba", "onCourt": false}
+  ]
+}

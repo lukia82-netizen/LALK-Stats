@@ -1,0 +1,18 @@
+{
+  "name": "Bestie",
+  "players": [
+    {"number": "6", "name": "Maksymilian Zacharski", "onCourt": true},
+    {"number": "7", "name": "Miron Neumann", "onCourt": true},
+    {"number": "9", "name": "Krzysztof Pawlicki", "onCourt": true},
+    {"number": "14", "name": "Ziemowit Popławski", "onCourt": true},
+    {"number": "19", "name": "Sławomir Sakowicz", "onCourt": true},
+    {"number": "44", "name": "Kacper Dłużyński", "onCourt": false},
+    {"number": "48", "name": "Aleksandra Sakowicz-Jackowiak", "onCourt": false},
+    {"number": "63", "name": "Marcel Śliwiński", "onCourt": false},
+    {"number": "74", "name": "Jakub Ludwiczak", "onCourt": false},
+    {"number": "79", "name": "Cezary Ginter", "onCourt": false},
+    {"number": "99", "name": "Jędrzej Maćkowiak", "onCourt": false},
+    {"number": "104", "name": "Jakub Korbas", "onCourt": false},
+    {"number": "109", "name": "Tobiasz Galon", "onCourt": false}
+  ]
+}

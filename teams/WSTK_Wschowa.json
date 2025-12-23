@@ -1,0 +1,17 @@
+{
+  "name": "WSTK Wschowa",
+  "players": [
+    {"number": "8", "name": "Daniel Chamioło", "onCourt": true},
+    {"number": "29", "name": "Jakub Pryczak", "onCourt": true},
+    {"number": "36", "name": "Grzegorz Gliński", "onCourt": true},
+    {"number": "41", "name": "Bartosz Raś", "onCourt": true},
+    {"number": "46", "name": "Przemysław Litorowicz", "onCourt": true},
+    {"number": "56", "name": "Oskar Owczarek", "onCourt": false},
+    {"number": "59", "name": "Jakub Adamski", "onCourt": false},
+    {"number": "64", "name": "Krzysztof Jurij", "onCourt": false},
+    {"number": "75", "name": "Rafał Glapiak", "onCourt": false},
+    {"number": "94", "name": "Oliwier Nietyksza", "onCourt": false},
+    {"number": "97", "name": "Jakub Firlej", "onCourt": false},
+    {"number": "110", "name": "Filip Kłudkowski", "onCourt": false}
+  ]
+}

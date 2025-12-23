@@ -1,0 +1,18 @@
+{
+  "name": "Old Boys Rawicz",
+  "players": [
+    {"number": "11", "name": "Kamil Przybyłek", "onCourt": true},
+    {"number": "7", "name": "Donatas Stukas", "onCourt": true},
+    {"number": "13", "name": "Kacper Kajak", "onCourt": true},
+    {"number": "18", "name": "Aleksander Styła", "onCourt": true},
+    {"number": "24", "name": "Paweł Niedbała", "onCourt": true},
+    {"number": "35", "name": "Karol Weiss", "onCourt": false},
+    {"number": "39", "name": "Maciej Stachowiak", "onCourt": false},
+    {"number": "43", "name": "Paweł Wasielewski", "onCourt": false},
+    {"number": "72", "name": "Leszek Kuczyński", "onCourt": false},
+    {"number": "73", "name": "Patryk Maciejewski", "onCourt": false},
+    {"number": "80", "name": "Adrian Lipowczyk", "onCourt": false},
+    {"number": "88", "name": "Bartłomiej Kajak", "onCourt": false},
+    {"number": "108", "name": "Mateusz Maćkowiak", "onCourt": false}
+  ]
+}

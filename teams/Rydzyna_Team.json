@@ -1,0 +1,18 @@
+{
+  "name": "Rydzyna Team",
+  "players": [
+    {"number": "10", "name": "Mateusz Walachowski", "onCourt": true},
+    {"number": "20", "name": "Tomasz Łoś", "onCourt": true},
+    {"number": "50", "name": "Przemysław Kałużny", "onCourt": true},
+    {"number": "62", "name": "Maciej Walachowski", "onCourt": true},
+    {"number": "77", "name": "Roman Pawlicki", "onCourt": true},
+    {"number": "84", "name": "Paweł Stępień", "onCourt": false},
+    {"number": "85", "name": "Jacek Wróblewski", "onCourt": false},
+    {"number": "86", "name": "Łukasz Bartkowiak", "onCourt": false},
+    {"number": "90", "name": "Maciej Pirzecki", "onCourt": false},
+    {"number": "100", "name": "Kuba Włodarczyk", "onCourt": false},
+    {"number": "101", "name": "Marek Krzyżaniak", "onCourt": false},
+    {"number": "103", "name": "Jarosław Maćkowiak", "onCourt": false},
+    {"number": "105", "name": "Daniel Raszke", "onCourt": false}
+  ]
+}

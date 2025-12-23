@@ -1,0 +1,15 @@
+{
+  "name": "Zaczarowany Pierniczek Gostyń",
+  "players": [
+    {"number": "12", "name": "Tomasz Dopierała", "onCourt": true},
+    {"number": "21", "name": "Jakub Nawrocki", "onCourt": true},
+    {"number": "30", "name": "Marcin Gródziński", "onCourt": true},
+    {"number": "31", "name": "Hubert Nowak", "onCourt": true},
+    {"number": "34", "name": "Maciej Gazda", "onCourt": true},
+    {"number": "51", "name": "Bartosz Lenarczyk", "onCourt": false},
+    {"number": "58", "name": "Krzysztof Wątor", "onCourt": false},
+    {"number": "76", "name": "Krzysztof Wajn", "onCourt": false},
+    {"number": "82", "name": "Tomasz Chudziński", "onCourt": false},
+    {"number": "91", "name": "Marcin Sperling", "onCourt": false}
+  ]
+}

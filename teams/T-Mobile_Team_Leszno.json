@@ -1,0 +1,13 @@
+{
+  "name": "T-Mobile Team Leszno",
+  "players": [
+    {"number": "1", "name": "Marcin Skrzypczak", "onCourt": true},
+    {"number": "2", "name": "Dawid Szczepaniak", "onCourt": true},
+    {"number": "16", "name": "Jacek Kaszuba", "onCourt": true},
+    {"number": "17", "name": "Rafał Wachowiak", "onCourt": true},
+    {"number": "42", "name": "Tomasz Dworczak", "onCourt": true},
+    {"number": "55", "name": "Patryk Świętek", "onCourt": false},
+    {"number": "68", "name": "Radosław Jąder", "onCourt": false},
+    {"number": "71", "name": "Bartosz Górski", "onCourt": false}
+  ]
+}

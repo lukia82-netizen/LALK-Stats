@@ -1,0 +1,16 @@
+{
+  "name": "Wypalone Zapałki Gostyń",
+  "players": [
+    {"number": "3", "name": "Bartosz Musielak", "onCourt": true},
+    {"number": "37", "name": "Jędrzej Zajdel", "onCourt": true},
+    {"number": "45", "name": "Adam Błaszyk", "onCourt": true},
+    {"number": "69", "name": "Rafał Woźniak", "onCourt": true},
+    {"number": "81", "name": "Piotr Glernarczyk", "onCourt": true},
+    {"number": "83", "name": "Adam Wojta", "onCourt": false},
+    {"number": "87", "name": "Remigiusz Roszak", "onCourt": false},
+    {"number": "89", "name": "Tobiasz Ptak", "onCourt": false},
+    {"number": "95", "name": "Wojciech Mróz", "onCourt": false},
+    {"number": "96", "name": "Juliusz Podjuk", "onCourt": false},
+    {"number": "107", "name": "Bartosz Czwojda", "onCourt": false}
+  ]
+}

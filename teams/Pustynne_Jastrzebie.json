@@ -1,0 +1,16 @@
+{
+  "name": "Pustynne Jastrzębie",
+  "players": [
+    {"number": "4", "name": "Damian Jastrzębski", "onCourt": true},
+    {"number": "15", "name": "Bartosz Kin", "onCourt": true},
+    {"number": "22", "name": "Adam Krajewski", "onCourt": true},
+    {"number": "27", "name": "Adam Skonieczny", "onCourt": true},
+    {"number": "49", "name": "Karol Owczarczyk", "onCourt": true},
+    {"number": "54", "name": "Patryk Jurczak", "onCourt": false},
+    {"number": "61", "name": "Mateusz Buchwald", "onCourt": false},
+    {"number": "67", "name": "Krzysztof Zajc", "onCourt": false},
+    {"number": "70", "name": "Szymon Gorynia", "onCourt": false},
+    {"number": "93", "name": "Michał Jędrzejczak", "onCourt": false},
+    {"number": "106", "name": "Jędrzej Dudkowiak", "onCourt": false}
+  ]
+}

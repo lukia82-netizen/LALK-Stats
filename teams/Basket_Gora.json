@@ -1,0 +1,13 @@
+{
+  "name": "Basket Góra",
+  "players": [
+    {"number": "23", "name": "Paweł Popowicz", "onCourt": true},
+    {"number": "28", "name": "Jakub Wawrzeńczak", "onCourt": true},
+    {"number": "33", "name": "Maciej Waściński", "onCourt": true},
+    {"number": "40", "name": "Maciej Gołębiowski", "onCourt": true},
+    {"number": "53", "name": "Grzegorz Nowak", "onCourt": true},
+    {"number": "57", "name": "Dawid Górski", "onCourt": false},
+    {"number": "78", "name": "Mateusz Woliński", "onCourt": false},
+    {"number": "92", "name": "Adam Sławiński", "onCourt": false}
+  ]
+}

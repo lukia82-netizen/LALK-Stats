@@ -17,7 +17,7 @@
                         <button class="btn btn-primary btn-small" @click="printProtocol">🖨️ Print</button>
                         <button class="btn btn-primary btn-small" @click="exportToPDF">📸 PDF</button>
                     </template>
-                    <button class="btn btn-danger btn-small" @click="resetGame" v-if="currentView === 'game'">Reset Game</button>
+                    <button class="btn btn-danger btn-small" @click="resetGame" v-if="currentView === 'game' || currentView === 'setup'">Reset Game</button>
                     <button class="btn btn-success btn-small" @click="saveGame" v-if="currentView === 'game'">Save Game</button>
                 </div>
             </div>
