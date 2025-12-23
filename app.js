@@ -707,7 +707,6 @@ createApp({
             this.resetGameClock();
             this.possessionArrow = null; // Reset possession to neutral
             this.saveToLocalStorage();
-            alert('Game started! Good luck! Press Start to begin the clock.');
         },
 
         resetGame() {
@@ -816,14 +815,17 @@ createApp({
             });
             
             // Check if player now has 5 fouls and disqualify them
-            if (playerFouls + 1 === 5) {
+            if (playerFouls + 1 >= 5) {
                 const playerIndex = teamData.players.findIndex(p => p.number === this.selectedPlayer.number);
                 if (playerIndex !== -1) {
                     const player = teamData.players[playerIndex];
+                    const wasOnCourt = player.onCourt;
+                    
                     player.fouledOut = true;
+                    player.onCourt = false;
                     
                     // Log substitution OUT if player was on court
-                    if (player.onCourt) {
+                    if (wasOnCourt) {
                         this.logAction({
                             team,
                             teamName: teamData.name,
@@ -832,8 +834,6 @@ createApp({
                             period: this.currentPeriod
                         });
                     }
-                    
-                    player.onCourt = false;
                     
                     // Move player to end of bench by sorting - fouled out players go last
                     const removedPlayer = teamData.players.splice(playerIndex, 1)[0];
@@ -946,6 +946,12 @@ createApp({
             this.pauseGameClock();
             this.gameClockMinutes = 10;
             this.gameClockSeconds = 0;
+        },
+
+        resetGameClockWithConfirm() {
+            if (confirm('Are you sure you want to reset the game clock to 10:00?')) {
+                this.resetGameClock();
+            }
         },
 
         setCustomGameClock() {
