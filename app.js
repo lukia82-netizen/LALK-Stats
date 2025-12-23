@@ -518,6 +518,16 @@ createApp({
                 // Check if already on court or if court is full (max 5)
                 if (!this.draggedPlayer.onCourt && courtPlayers.length < 5) {
                     this.draggedPlayer.onCourt = true;
+                    
+                    // Log substitution IN
+                    this.logAction({
+                        team,
+                        teamName: teamData.name,
+                        action: `${ACTION_TYPES.SUBSTITUTION}: IN #${this.draggedPlayer.number} ${this.draggedPlayer.name}`,
+                        player: { number: this.draggedPlayer.number, name: this.draggedPlayer.name },
+                        period: this.currentPeriod
+                    });
+                    
                     this.saveToLocalStorage();
                 }
                 
@@ -531,6 +541,16 @@ createApp({
                 // Move to bench
                 if (this.draggedPlayer.onCourt) {
                     this.draggedPlayer.onCourt = false;
+                    
+                    // Log substitution OUT
+                    this.logAction({
+                        team,
+                        teamName: this.getTeam(team).name,
+                        action: `${ACTION_TYPES.SUBSTITUTION}: OUT #${this.draggedPlayer.number} ${this.draggedPlayer.name}`,
+                        player: { number: this.draggedPlayer.number, name: this.draggedPlayer.name },
+                        period: this.currentPeriod
+                    });
+                    
                     this.saveToLocalStorage();
                 }
                 
@@ -581,6 +601,17 @@ createApp({
                 const tempStatus = draggedPlayer.onCourt;
                 draggedPlayer.onCourt = targetPlayer.onCourt;
                 targetPlayer.onCourt = tempStatus;
+                
+                // Add visual feedback - both players pulse green
+                this.recentlySwappedPlayers.push({team, number: draggedPlayer.number});
+                this.recentlySwappedPlayers.push({team, number: targetPlayer.number});
+                
+                // Remove animation after 1.5 seconds
+                setTimeout(() => {
+                    this.recentlySwappedPlayers = this.recentlySwappedPlayers.filter(
+                        p => !(p.team === team && (p.number === draggedPlayer.number || p.number === targetPlayer.number))
+                    );
+                }, 1500);
                 
                 // Log substitutions to game log
                 if (draggedWasOnCourt && !targetWasOnCourt) {
@@ -658,9 +689,15 @@ createApp({
         startGame() {
             if (!this.canStartGame) return;
             
-            // Mark starting lineup
-            this.teamA.players.forEach(p => p.wasStarter = p.onCourt);
-            this.teamB.players.forEach(p => p.wasStarter = p.onCourt);
+            // Mark starting lineup and reset fouled-out status
+            this.teamA.players.forEach(p => {
+                p.wasStarter = p.onCourt;
+                p.fouledOut = false;
+            });
+            this.teamB.players.forEach(p => {
+                p.wasStarter = p.onCourt;
+                p.fouledOut = false;
+            });
             
             this.gameReady = true;
             this.currentView = 'game';
@@ -779,11 +816,23 @@ createApp({
             });
             
             // Check if player now has 5 fouls and disqualify them
-            if (playerFouls + 1 >= 5) {
+            if (playerFouls + 1 === 5) {
                 const playerIndex = teamData.players.findIndex(p => p.number === this.selectedPlayer.number);
                 if (playerIndex !== -1) {
                     const player = teamData.players[playerIndex];
                     player.fouledOut = true;
+                    
+                    // Log substitution OUT if player was on court
+                    if (player.onCourt) {
+                        this.logAction({
+                            team,
+                            teamName: teamData.name,
+                            action: `${ACTION_TYPES.SUBSTITUTION}: OUT #${player.number} ${player.name} (fouled out)`,
+                            player: { number: player.number, name: player.name },
+                            period: this.currentPeriod
+                        });
+                    }
+                    
                     player.onCourt = false;
                     
                     // Move player to end of bench by sorting - fouled out players go last
@@ -923,6 +972,23 @@ createApp({
             
             this.gameClockMinutes = minutes;
             this.gameClockSeconds = seconds;
+        },
+
+        changePeriod(newPeriod) {
+            // Ask if user wants to clear team fouls when changing period
+            if (confirm('Do you want to clear team fouls for the new period?')) {
+                this.teamA.fouls = 0;
+                this.teamB.fouls = 0;
+            }
+            
+            this.currentPeriod = newPeriod;
+            
+            // Reset possession arrow if going back to Q1
+            if (newPeriod === 1) {
+                this.possessionArrow = null;
+            }
+            
+            this.saveToLocalStorage();
         },
 
         onQuarterEnd() {

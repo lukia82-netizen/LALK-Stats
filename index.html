@@ -101,13 +101,13 @@
                                     v-for="p in 4" 
                                     :key="p" 
                                     :class="{active: currentPeriod === p}"
-                                    @click="currentPeriod = p; if (p === 1) possessionArrow = null">
+                                    @click="changePeriod(p)">
                                 Q{{ p }}
                             </button>
                             <button class="period-btn" 
                                     v-if="currentPeriod >= 5"
                                     :class="{active: currentPeriod >= 5}"
-                                    @click="currentPeriod = 5">
+                                    @click="changePeriod(5)">
                                 {{ periodDisplay }}
                             </button>
                         </div>
