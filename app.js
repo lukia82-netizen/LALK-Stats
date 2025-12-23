@@ -6,6 +6,7 @@
 const QUARTERS_PER_GAME = 4;
 const TIMEOUTS_FIRST_HALF = 2;
 const TIMEOUTS_SECOND_HALF = 3;
+const TIMEOUTS_OVERTIME = 1;
 const FIRST_HALF_QUARTERS = [1, 2];
 const SECOND_HALF_QUARTERS = [3, 4];
 
@@ -81,12 +82,12 @@ class Team {
         this.freeThrowsMade = 0;
         this.freeThrowsTotal = 0;
         this.players = [];
-        this.timeouts = { firstHalf: 0, secondHalf: 0 };
+        this.timeouts = { firstHalf: 0, secondHalf: 0, overtime: 0 };
         this.isHomeTeam = isHomeTeam;
     }
 
-    addPlayer(number = '', name = '', onCourt = false, wasStarter = false) {
-        this.players.push({ number, name, onCourt, wasStarter });
+    addPlayer(number = '', name = '', onCourt = false, wasStarter = false, fouls = 0) {
+        this.players.push({ number, name, onCourt, wasStarter, fouls: fouls || 0 });
     }
 
     removePlayer(index) {
@@ -126,16 +127,20 @@ class Team {
         }
     }
 
-    addTimeout(isFirstHalf) {
-        if (isFirstHalf) {
+    addTimeout(isFirstHalf, isOvertime = false) {
+        if (isOvertime) {
+            this.timeouts.overtime++;
+        } else if (isFirstHalf) {
             this.timeouts.firstHalf++;
         } else {
             this.timeouts.secondHalf++;
         }
     }
 
-    removeTimeout(isFirstHalf) {
-        if (isFirstHalf) {
+    removeTimeout(isFirstHalf, isOvertime = false) {
+        if (isOvertime) {
+            this.timeouts.overtime = Math.max(0, this.timeouts.overtime - 1);
+        } else if (isFirstHalf) {
             this.timeouts.firstHalf = Math.max(0, this.timeouts.firstHalf - 1);
         } else {
             this.timeouts.secondHalf = Math.max(0, this.timeouts.secondHalf - 1);
@@ -143,6 +148,10 @@ class Team {
     }
 
     getAvailableTimeouts(currentPeriod) {
+        if (currentPeriod >= 5) {
+            // Overtime
+            return TIMEOUTS_OVERTIME - this.timeouts.overtime;
+        }
         const isFirstHalf = Utils.isFirstHalf(currentPeriod);
         const maxTimeouts = isFirstHalf ? TIMEOUTS_FIRST_HALF : TIMEOUTS_SECOND_HALF;
         const usedTimeouts = isFirstHalf ? this.timeouts.firstHalf : this.timeouts.secondHalf;
@@ -163,7 +172,7 @@ class Team {
         this.totalFouls = 0;
         this.freeThrowsMade = 0;
         this.freeThrowsTotal = 0;
-        this.timeouts = { firstHalf: 0, secondHalf: 0 };
+        this.timeouts = { firstHalf: 0, secondHalf: 0, overtime: 0 };
     }
 
     toJSON() {
@@ -184,7 +193,13 @@ class Team {
         Object.assign(team, data);
         // Ensure timeouts property exists (backward compatibility)
         if (!team.timeouts) {
-            team.timeouts = { firstHalf: 0, secondHalf: 0 };
+            team.timeouts = { firstHalf: 0, secondHalf: 0, overtime: 0 };
+        } else if (!team.timeouts.overtime) {
+            team.timeouts.overtime = 0;
+        }
+        // Ensure totalFouls property exists (backward compatibility)
+        if (team.totalFouls === undefined) {
+            team.totalFouls = team.fouls || 0;
         }
         // Ensure onCourt property exists for all players (backward compatibility)
         if (team.players) {
@@ -250,7 +265,13 @@ createApp({
             pendingAction: null,
 
             // === PRINT MODE STATE ===
-            printMode: 'none' // 'none', 'minimal', 'full'
+            printMode: 'none', // 'none', 'minimal', 'full'
+
+            // === POSSESSION ARROW ===
+            possessionArrow: null, // null, 'A', or 'B'
+
+            // === UNSAVED CHANGES ===
+            hasUnsavedChanges: false
         };
     },
 
@@ -295,7 +316,16 @@ createApp({
         },
 
         secondHalfLog() {
-            return this.gameLog.filter(entry => SECOND_HALF_QUARTERS.includes(entry.period));
+            return this.gameLog.filter(entry => SECOND_HALF_QUARTERS.includes(entry.period) || entry.period >= 5);
+        },
+
+        // === PERIOD DISPLAY ===
+        periodDisplay() {
+            if (this.currentPeriod <= 4) {
+                return `Q${this.currentPeriod}`;
+            } else {
+                return `OT${this.currentPeriod - 4}`;
+            }
         }
     },
 
@@ -654,8 +684,9 @@ createApp({
         addTimeout(team) {
             const teamData = this.getTeam(team);
             const isFirstHalf = Utils.isFirstHalf(this.currentPeriod);
+            const isOvertime = this.currentPeriod >= 5;
             
-            teamData.addTimeout(isFirstHalf);
+            teamData.addTimeout(isFirstHalf, isOvertime);
             
             this.logAction({
                 team,
@@ -738,6 +769,9 @@ createApp({
         },
 
         onQuarterEnd() {
+            // Play buzzer sound
+            this.playBuzzer();
+            
             if (this.currentPeriod < 4) {
                 if (confirm(`Quarter ${this.currentPeriod} ended! Start Quarter ${this.currentPeriod + 1}?`)) {
                     this.currentPeriod++;
@@ -750,9 +784,38 @@ createApp({
                     this.saveToLocalStorage();
                     alert(`Quarter ${this.currentPeriod} ready. Press Start to begin the clock.`);
                 }
+            } else if (this.currentPeriod === 4) {
+                // End of Q4 - check for overtime
+                if (this.teamA.score === this.teamB.score) {
+                    if (confirm('Game tied! Start Overtime?')) {
+                        this.currentPeriod = 5; // OT1
+                        this.gameClockMinutes = 5;
+                        this.gameClockSeconds = 0;
+                        // DO NOT reset fouls in overtime (FIBA rules)
+                        // Reset overtime timeouts
+                        this.teamA.timeouts.overtime = 0;
+                        this.teamB.timeouts.overtime = 0;
+                        this.saveToLocalStorage();
+                    }
+                } else {
+                    alert('Game Over! Final score: ' + this.teamA.name + ' ' + this.teamA.score + ' - ' + this.teamB.score + ' ' + this.teamB.name);
+                }
             } else {
-                alert('Game Over! Final score: ' + this.teamA.name + ' ' + this.teamA.score + ' - ' + this.teamB.score + ' ' + this.teamB.name);
-                this.resetGameClock();
+                // End of OT - check if still tied
+                if (this.teamA.score === this.teamB.score) {
+                    if (confirm(`Overtime ${this.currentPeriod - 4} ended - still tied! Continue to OT${this.currentPeriod - 3}?`)) {
+                        this.currentPeriod++;
+                        this.gameClockMinutes = 5;
+                        this.gameClockSeconds = 0;
+                        // DO NOT reset fouls in overtime (FIBA rules)
+                        // Reset overtime timeouts for next OT
+                        this.teamA.timeouts.overtime = 0;
+                        this.teamB.timeouts.overtime = 0;
+                        this.saveToLocalStorage();
+                    }
+                } else {
+                    alert('Game Over! Final score: ' + this.teamA.name + ' ' + this.teamA.score + ' - ' + this.teamB.score + ' ' + this.teamB.name);
+                }
             }
         },
 
@@ -783,6 +846,11 @@ createApp({
         },
 
         stopTimeoutTimer() {
+            // Play buzzer sound when timeout ends
+            if (this.timeoutInterval) {
+                this.playBuzzer();
+            }
+            
             if (this.timeoutInterval) {
                 clearInterval(this.timeoutInterval);
                 this.timeoutInterval = null;
@@ -834,7 +902,8 @@ createApp({
             
             if (entry.action === ACTION_TYPES.TIMEOUT) {
                 const isFirstHalf = Utils.isFirstHalf(entry.period);
-                teamData.removeTimeout(isFirstHalf);
+                const isOvertime = entry.period >= 5;
+                teamData.removeTimeout(isFirstHalf, isOvertime);
                 
                 // Stop timeout timer if this team's timeout is currently active
                 if (this.timeoutTeam === entry.team) {
@@ -1019,6 +1088,193 @@ createApp({
             return `${scoreA}:${scoreB}`;
         },
 
+        formatPeriod(period) {
+            if (period <= 4) {
+                return period;
+            } else {
+                return `OT${period - 4}`;
+            }
+        },
+
+        // ============================================
+        // UNDO FUNCTIONALITY
+        // ============================================
+        undoLastAction() {
+            if (this.gameLog.length === 0) {
+                alert('No actions to undo!');
+                return;
+            }
+            
+            // Delete the last entry (which is at index 0 in reversed view)
+            this.deleteLogEntry(0);
+        },
+
+        // ============================================
+        // POSSESSION ARROW
+        // ============================================
+        togglePossessionArrow() {
+            if (this.possessionArrow === null) {
+                this.possessionArrow = 'A';
+            } else if (this.possessionArrow === 'A') {
+                this.possessionArrow = 'B';
+            } else {
+                this.possessionArrow = 'A';
+            }
+            this.saveToLocalStorage();
+        },
+
+        // ============================================
+        // SOUND EFFECTS
+        // ============================================
+        playBuzzer() {
+            // Create audio context and play buzzer beep
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800; // Hz
+                oscillator.type = 'square';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (e) {
+                console.log('Audio not supported:', e);
+            }
+        },
+
+        // ============================================
+        // CSV EXPORT
+        // ============================================
+        exportToCSV() {
+            const rows = [];
+            
+            // Header
+            rows.push(['Basketball Game Statistics']);
+            rows.push(['Date', this.currentDate]);
+            rows.push(['Teams', `${this.teamA.name} vs ${this.teamB.name}`]);
+            rows.push(['Final Score', `${this.teamA.score} : ${this.teamB.score}`]);
+            rows.push([]);
+            
+            // Team A Stats
+            rows.push([`${this.teamA.name} - Player Statistics`]);
+            rows.push(['#', 'Name', 'Played', 'Points', 'Fouls', 'FT Made', 'FT Total', 'FT%', '+/-']);
+            this.teamA.players.forEach(player => {
+                rows.push([
+                    player.number,
+                    player.name,
+                    this.getPlayerStatus('A', player),
+                    this.getPlayerPoints('A', player.number),
+                    this.getPlayerFouls('A', player.number),
+                    this.getPlayerFreeThrows('A', player.number).made,
+                    this.getPlayerFreeThrows('A', player.number).total,
+                    this.calculatePlayerFTPercentage('A', player.number),
+                    this.getPlayerPlusMinus('A', player.number)
+                ]);
+            });
+            rows.push([]);
+            
+            // Team B Stats
+            rows.push([`${this.teamB.name} - Player Statistics`]);
+            rows.push(['#', 'Name', 'Played', 'Points', 'Fouls', 'FT Made', 'FT Total', 'FT%', '+/-']);
+            this.teamB.players.forEach(player => {
+                rows.push([
+                    player.number,
+                    player.name,
+                    this.getPlayerStatus('B', player),
+                    this.getPlayerPoints('B', player.number),
+                    this.getPlayerFouls('B', player.number),
+                    this.getPlayerFreeThrows('B', player.number).made,
+                    this.getPlayerFreeThrows('B', player.number).total,
+                    this.calculatePlayerFTPercentage('B', player.number),
+                    this.getPlayerPlusMinus('B', player.number)
+                ]);
+            });
+            rows.push([]);
+            
+            // Game Log
+            rows.push(['Game Log']);
+            rows.push(['Quarter', 'Time', 'Team', 'Player', 'Action', 'Score']);
+            this.gameLog.forEach(entry => {
+                rows.push([
+                    entry.period,
+                    entry.time,
+                    entry.teamName,
+                    entry.player ? `#${entry.player.number} ${entry.player.name}` : '-',
+                    entry.action,
+                    this.getScoreAtLogIndex(this.gameLog.indexOf(entry))
+                ]);
+            });
+            
+            // Convert to CSV string
+            const csvContent = rows.map(row => 
+                row.map(cell => `"${cell}"`).join(',')
+            ).join('\\n');
+            
+            // Download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `basketball_game_${this.teamA.name}_vs_${this.teamB.name}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        },
+
+        // ============================================
+        // PERFORMANCE STATS
+        // ============================================
+        getPlayerPlusMinus(team, playerNumber) {
+            // Calculate +/- when player is on court
+            let plusMinus = 0;
+            let onCourt = false;
+            
+            // Check if player started
+            const teamData = this.getTeam(team);
+            const player = teamData.players.find(p => p.number == playerNumber);
+            if (player && player.wasStarter) {
+                onCourt = true;
+            }
+            
+            this.gameLog.forEach(entry => {
+                // Check for substitutions involving this player
+                if (entry.action === ACTION_TYPES.SUBSTITUTION && entry.player && entry.player.number == playerNumber && entry.team === team) {
+                    onCourt = !onCourt; // Toggle on/off court
+                }
+                
+                // Count points while on court
+                if (onCourt && entry.points > 0) {
+                    if (entry.team === team) {
+                        plusMinus += entry.points; // Team scored
+                    } else {
+                        plusMinus -= entry.points; // Opponent scored
+                    }
+                }
+            });
+            
+            return plusMinus > 0 ? `+${plusMinus}` : plusMinus.toString();
+        },
+
+        getPlayerShootingPercentage(team, playerNumber) {
+            // Calculate FG% (excluding free throws)
+            const fieldGoals = this.gameLog.filter(entry => 
+                entry.team === team && 
+                entry.player && 
+                entry.player.number == playerNumber &&
+                (entry.points === 2 || entry.points === 3)
+            );
+            
+            return fieldGoals.length;
+        },
+
         // ============================================
         // STORAGE
         // ============================================
@@ -1097,8 +1353,18 @@ createApp({
 
             const key = event.key.toUpperCase();
 
+            // Spacebar - toggle game clock
+            if (key === ' ') {
+                event.preventDefault();
+                if (this.gameClockRunning) {
+                    this.pauseGameClock();
+                } else {
+                    this.startGameClock();
+                }
+            }
+            
             // Team A points
-            if (key === 'Q') this.addPoints('A', 1);
+            else if (key === 'Q') this.addPoints('A', 1);
             else if (key === 'W') this.addPoints('A', 2);
             else if (key === 'E') this.addPoints('A', 3);
             
@@ -1115,10 +1381,37 @@ createApp({
             else if (key === 'T') this.addFreeThrow('A', true);
             else if (key === 'G') this.addFreeThrow('B', true);
             
-            // Player selection (1-5)
+            // Undo
+            else if (key === 'Z' && (event.ctrlKey || event.metaKey)) {
+                event.preventDefault();
+                this.undoLastAction();
+            }
+            
+            // Player selection (1-5 for Team A on court)
             else if (key >= '1' && key <= '5') {
                 const playerIndex = parseInt(key) - 1;
-                // Toggle between teams or select from current context
+                const courtPlayers = this.teamA.getCourtPlayers();
+                if (courtPlayers[playerIndex]) {
+                    const actualIndex = this.teamA.players.indexOf(courtPlayers[playerIndex]);
+                    this.selectPlayerByIndex('A', actualIndex);
+                }
+            }
+            
+            // Player selection (6-0 for Team B on court)
+            else if (key >= '6' && key <= '9') {
+                const playerIndex = parseInt(key) - 6;
+                const courtPlayers = this.teamB.getCourtPlayers();
+                if (courtPlayers[playerIndex]) {
+                    const actualIndex = this.teamB.players.indexOf(courtPlayers[playerIndex]);
+                    this.selectPlayerByIndex('B', actualIndex);
+                }
+            }
+            else if (key === '0') {
+                const courtPlayers = this.teamB.getCourtPlayers();
+                if (courtPlayers[4]) {
+                    const actualIndex = this.teamB.players.indexOf(courtPlayers[4]);
+                    this.selectPlayerByIndex('B', actualIndex);
+                }
             }
             
             // Cancel selection
@@ -1132,6 +1425,15 @@ createApp({
         
         // Add keyboard event listener
         window.addEventListener('keydown', this.handleKeyPress);
+        
+        // Add beforeunload warning for unsaved changes
+        window.addEventListener('beforeunload', (e) => {
+            if (this.gameLog.length > 0) {
+                e.preventDefault();
+                e.returnValue = 'You have an active game. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
     },
 
     beforeUnmount() {

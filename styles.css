@@ -714,9 +714,9 @@ body {
     font-size: 10px;
 }
 
-/* Protocol Log Cell Styling - Smaller 7px Font Size */
+/* Protocol Log Cell Styling - Increased Font Size */
 .protocol-log-cell {
-    font-size: 7px;
+    font-size: 10px;
 }
 
 /* Protocol Half Title */
@@ -728,7 +728,7 @@ body {
 }
 
 .protocol-team-name {
-    font-weight: 700;
+    font-weight: 300;
     text-align: left;
     padding-left: 8px;
 }
@@ -823,7 +823,7 @@ body {
     }
 
     .protocol-table {
-        font-size: 7px;
+        font-size: 10px;
         page-break-inside: avoid;
         margin-bottom: 8px;
     }
@@ -836,6 +836,31 @@ body {
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .header {
+        padding: 15px;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .header h1 {
+        font-size: 20px;
+    }
+
+    .header-controls {
+        flex-wrap: wrap;
+        gap: 5px;
+        justify-content: center;
+    }
+
+    .btn-small {
+        font-size: 11px;
+        padding: 8px 12px;
+    }
+
     .team-setup {
         grid-template-columns: 1fr;
     }
@@ -845,10 +870,114 @@ body {
     }
 
     .action-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .action-btn {
+        font-size: 13px;
+        padding: 12px;
+        min-height: 50px;
+    }
+
+    .player-btn {
+        min-height: 45px;
+        font-size: 13px;
+        padding: 8px;
+    }
+
+    .stat-card {
+        padding: 8px;
+    }
+
+    .stat-label {
+        font-size: 10px;
+    }
+
+    .stat-value {
+        font-size: 16px;
     }
 
     .protocol-two-columns {
         grid-template-columns: 1fr;
     }
+
+    .period-selector {
+        flex-wrap: wrap;
+    }
+
+    .period-btn {
+        min-width: 50px;
+        padding: 8px 12px;
+    }
+}
+
+/* === PLAYER FOUL WARNING === */
+.player-fouls {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #dc2626;
+    color: white;
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+.player-btn.high-fouls {
+    border: 2px solid #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.player-btn {
+    position: relative;
+}
+
+/* === WARNING BUTTON === */
+.btn-warning {
+    background: #ff9800;
+    border-color: #f57c00;
+}
+
+.btn-warning:hover {
+    background: #f57c00;
+}
+/* === POSSESSION ARROW BUTTON === */
+.possession-arrow-btn {
+    background: #dc2626;
+    border: 3px solid #991b1b;
+    color: white;
+    font-size: 48px;
+    padding: 20px 40px;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.4);
+    min-width: 150px;
+}
+
+.possession-arrow-btn:hover {
+    background: #991b1b;
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(220, 38, 38, 0.6);
+}
+
+.possession-arrow-btn:active {
+    transform: scale(0.98);
+}
+
+/* === COMPACT POSSESSION ARROW BUTTON === */
+.possession-arrow-btn-compact {
+    font-size: 20px;
+    padding: 10px 16px;
+    min-width: auto;
+}
+
+.possession-arrow-btn-compact:hover {
+    transform: scale(1.05);
+}
+
+.possession-arrow-btn-compact:active {
+    transform: scale(0.98);
 }

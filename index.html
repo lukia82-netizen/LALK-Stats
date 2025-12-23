@@ -16,7 +16,9 @@
                     <template v-if="['game', 'stats', 'protocol'].includes(currentView)">
                         <button class="btn btn-primary btn-small" @click="printProtocol">🖨️ Print</button>
                         <button class="btn btn-primary btn-small" @click="exportToPDF">📸 PDF</button>
+                        <button class="btn btn-primary btn-small" @click="exportToCSV">📊 CSV</button>
                     </template>
+                    <button class="btn btn-warning btn-small" @click="undoLastAction" v-if="currentView === 'game' && gameLog.length > 0">↩️ Undo</button>
                     <button class="btn btn-danger btn-small" @click="resetGame" v-if="currentView === 'game' || currentView === 'setup'">Reset Game</button>
                     <button class="btn btn-success btn-small" @click="saveGame" v-if="currentView === 'game'">Save Game</button>
                 </div>
@@ -54,7 +56,7 @@
                             </div>
                             
                             <div class="player-list">
-                                <h3>Players (Click 🏀 to put on court)</h3>
+                                <h3>Players (Select 🏀starting five)</h3>
                                 <div class="player-item" v-for="(player, index) in team.players" :key="index">
                                     <button class="btn btn-small" 
                                             :style="{background: player.onCourt ? '#10b981' : '#6b7280', color: 'white', padding: '8px 12px', opacity: gameReady ? 0.5 : 1, cursor: gameReady ? 'not-allowed' : 'pointer'}"
@@ -93,16 +95,24 @@
                 <!-- Game View -->
                 <div class="view" :class="{active: currentView === 'game'}">
                     <!-- Period Selector -->
-                    <div class="period-selector">
-                        <button class="period-btn" 
-                                v-for="p in 4" 
-                                :key="p" 
-                                :class="{active: currentPeriod === p}"
-                                @click="currentPeriod = p">
-                            Q{{ p }}
-                        </button>
+                    <div style="margin-bottom: 15px;">
+                        <div class="period-selector">
+                            <button class="period-btn" 
+                                    v-for="p in 4" 
+                                    :key="p" 
+                                    :class="{active: currentPeriod === p}"
+                                    @click="currentPeriod = p">
+                                Q{{ p }}
+                            </button>
+                            <button class="period-btn" 
+                                    v-if="currentPeriod >= 5"
+                                    :class="{active: currentPeriod >= 5}"
+                                    @click="currentPeriod = 5">
+                                {{ periodDisplay }}
+                            </button>
+                        </div>
                     </div>
-
+                    
                     <!-- Game Clock -->
                     <div style="text-align: center; margin: 20px auto; max-width: 400px;">
                         <div :style="{
@@ -126,6 +136,13 @@
                                     :style="gameClockRunning ? {background: '#6c757d', borderColor: '#6c757d'} : {}"
                                     @click="gameClockRunning ? pauseGameClock() : startGameClock()">
                                 {{ gameClockRunning ? '⏸️ Pause' : '▶️ Start' }}
+                            </button>
+                            <button class="btn btn-warning btn-small possession-arrow-btn-compact" 
+                                    @click="togglePossessionArrow"
+                                    title="Click to switch possession">
+                                <span v-if="possessionArrow === null">⚪</span>
+                                <span v-else-if="possessionArrow === 'A'">⬅️</span>
+                                <span v-else>➡️</span>
                             </button>
                             <button class="btn btn-danger btn-small" 
                                     @click="resetGameClock">
@@ -222,7 +239,7 @@
                                         <button v-for="(player, index) in team.players.filter(p => p.onCourt)" 
                                                 :key="'court-' + teamId.toLowerCase() + '-' + index"
                                                 class="player-btn"
-                                                :class="{selected: isPlayerSelected(teamId, player)}"
+                                                :class="{selected: isPlayerSelected(teamId, player), 'high-fouls': getPlayerFouls(teamId, player.number) >= 4}"
                                                 draggable="true"
                                                 @dragstart="startDrag(teamId, team.players.indexOf(player), $event)"
                                                 @dragover.prevent
@@ -231,6 +248,9 @@
                                                 @click.stop="selectPlayerByIndex(teamId, team.players.indexOf(player))">
                                             <span class="player-number">#{{ player.number }}</span>
                                             <span class="player-name">{{ getLastName(player.name) }}</span>
+                                            <span v-if="getPlayerFouls(teamId, player.number) >= 4" class="player-fouls">
+                                                ⚠️{{ getPlayerFouls(teamId, player.number) }}
+                                            </span>
                                         </button>
                                     </div>
                                 </div>
@@ -247,7 +267,7 @@
                                         <button v-for="(player, index) in team.players.filter(p => !p.onCourt)" 
                                                 :key="'bench-' + teamId.toLowerCase() + '-' + index"
                                                 class="player-btn"
-                                                :class="{selected: isPlayerSelected(teamId, player)}"
+                                                :class="{selected: isPlayerSelected(teamId, player), 'high-fouls': getPlayerFouls(teamId, player.number) >= 4}"
                                                 draggable="true"
                                                 @dragstart="startDrag(teamId, team.players.indexOf(player), $event)"
                                                 @dragover.prevent
@@ -256,6 +276,9 @@
                                                 @click.stop="selectPlayerByIndex(teamId, team.players.indexOf(player))">
                                             <span class="player-number">#{{ player.number }}</span>
                                             <span class="player-name">{{ getLastName(player.name) }}</span>
+                                            <span v-if="getPlayerFouls(teamId, player.number) >= 4" class="player-fouls">
+                                                ⚠️{{ getPlayerFouls(teamId, player.number) }}
+                                            </span>
                                         </button>
                                     </div>
                                 </div>
@@ -280,7 +303,7 @@
                             </thead>
                             <tbody>
                                 <tr v-for="(entry, index) in reversedGameLog" :key="index">
-                                    <td>{{ entry.period }}</td>
+                                    <td>{{ formatPeriod(entry.period) }}</td>
                                     <td>{{ entry.time }}</td>
                                     <td>{{ entry.teamName }}</td>
                                     <td>
@@ -352,9 +375,10 @@
                                         <th>#</th>
                                         <th>Name</th>
                                         <th>PTS</th>
-                                        <th>Fouls</th>
+                                        <th>F</th>
                                         <th>FT</th>
                                         <th>FT%</th>
+                                        <th>+/-</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -365,6 +389,7 @@
                                         <td style="font-size: 10px;">{{ getPlayerFouls(teamId, player.number) }}</td>
                                         <td style="font-size: 10px;">{{ getPlayerFreeThrows(teamId, player.number).made }}/{{ getPlayerFreeThrows(teamId, player.number).total }}</td>
                                         <td style="font-size: 10px;">{{ calculatePlayerFTPercentage(teamId, player.number) }}</td>
+                                        <td style="font-size: 10px;">{{ getPlayerPlusMinus(teamId, player.number) }}</td>
                                     </tr>
                                     <tr style="background: #e3f2fd; font-weight: 700; font-size: 10px;">
                                         <td colspan="2">TOTAL</td>
@@ -372,6 +397,7 @@
                                         <td>{{ team.totalFouls }}</td>
                                         <td>{{ team.freeThrowsMade }}/{{ team.freeThrowsTotal }}</td>
                                         <td>{{ calculateFreeThrowPercentage(teamId) }}</td>
+                                        <td>-</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -476,7 +502,7 @@
                             <div v-for="(halfLog, halfName) in {first: firstHalfLog, second: secondHalfLog}" :key="halfName"
                                  :class="halfName === 'first' ? 'protocol-left-column' : 'protocol-right-column'">
                                 <h4 class="protocol-half-title">
-                                    {{ halfName === 'first' ? '1ST HALF (Q1 + Q2)' : '2ND HALF (Q3 + Q4)' }}
+                                    {{ halfName === 'first' ? '1ST HALF (Q1 + Q2)' : '2ND HALF (Q3 + Q4 + OT)' }}
                                 </h4>
                                 <table class="protocol-table">
                                     <thead>
@@ -491,7 +517,7 @@
                                     </thead>
                                     <tbody>
                                         <tr v-for="(entry, index) in halfLog" :key="halfName + '-' + index">
-                                            <td>{{ entry.period }}</td>
+                                            <td>{{ formatPeriod(entry.period) }}</td>
                                             <td class="protocol-log-cell">{{ entry.time }}</td>
                                             <td class="protocol-log-cell protocol-team-name">{{ entry.teamName }}</td>
                                             <td class="protocol-log-cell">
