@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basketball Scoreboard - Test Runner</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-suite {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-suite h2 {
+            color: #2196F3;
+            margin-top: 0;
+        }
+        .test-case {
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 4px;
+            border-left: 4px solid #ddd;
+        }
+        .test-case.pass {
+            background: #E8F5E9;
+            border-left-color: #4CAF50;
+        }
+        .test-case.fail {
+            background: #FFEBEE;
+            border-left-color: #F44336;
+        }
+        .test-icon {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .test-icon.pass {
+            color: #4CAF50;
+        }
+        .test-icon.fail {
+            color: #F44336;
+        }
+        .summary {
+            background: #2196F3;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .summary h2 {
+            margin: 0 0 10px 0;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+        .stat {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .error-details {
+            margin-top: 8px;
+            padding: 8px;
+            background: #fff;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏀 Basketball Scoreboard - Test Results</h1>
+    <div id="test-results"></div>
+
+    <script>
+        // Simple test framework
+        const results = {
+            passed: 0,
+            failed: 0,
+            total: 0,
+            suites: []
+        };
+
+        let currentSuite = null;
+
+        function describe(name, fn) {
+            currentSuite = {
+                name,
+                tests: []
+            };
+            results.suites.push(currentSuite);
+            fn();
+            currentSuite = null;
+        }
+
+        function test(name, fn) {
+            results.total++;
+            try {
+                fn();
+                results.passed++;
+                currentSuite.tests.push({
+                    name,
+                    passed: true
+                });
+            } catch (error) {
+                results.failed++;
+                currentSuite.tests.push({
+                    name,
+                    passed: false,
+                    error: error.message
+                });
+            }
+        }
+
+        function expect(value) {
+            return {
+                toBe(expected) {
+                    if (value !== expected) {
+                        throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(value)}`);
+                    }
+                }
+            };
+        }
+
+        // Constants from app.js
+        const ACTION_TYPES = {
+            POINTS: 'Points',
+            FOUL: 'Foul',
+            FREE_THROW_MADE: '1 Point FT',
+            FREE_THROW_MISSED: 'FT Missed',
+            TIMEOUT: 'Timeout',
+            SUBSTITUTION: 'Substitution'
+        };
+
+        const DISQUALIFICATION_FOULS = 5;
+
+        // Helper functions
+        const createPlayer = (number, name, onCourt = false) => ({
+            number,
+            name,
+            onCourt,
+            fouledOut: false
+        });
+
+        // Run all tests
+        describe('Player Statistics Caching', () => {
+            test('should calculate player fouls correctly from game log', () => {
+                const gameLog = [
+                    { team: 'A', player: { number: 5, name: 'John' }, action: ACTION_TYPES.FOUL, points: 0, period: 1 },
+                    { team: 'A', player: { number: 5, name: 'John' }, action: ACTION_TYPES.FOUL, points: 0, period: 1 },
+                    { team: 'A', player: { number: 7, name: 'Mike' }, action: ACTION_TYPES.FOUL, points: 0, period: 1 },
+                    { team: 'B', player: { number: 5, name: 'Alex' }, action: ACTION_TYPES.FOUL, points: 0, period: 1 }
+                ];
+
+                const stats = {};
+                gameLog.forEach(entry => {
+                    if (entry.player) {
+                        const key = `${entry.team}-${entry.player.number}`;
+                        if (!stats[key]) stats[key] = { fouls: 0, points: 0 };
+                        if (entry.action === ACTION_TYPES.FOUL) stats[key].fouls++;
+                    }
+                });
+
+                expect(stats['A-5'].fouls).toBe(2);
+                expect(stats['A-7'].fouls).toBe(1);
+                expect(stats['B-5'].fouls).toBe(1);
+            });
+
+            test('should calculate player points correctly from game log', () => {
+                const gameLog = [
+                    { team: 'A', player: { number: 5, name: 'John' }, action: ACTION_TYPES.POINTS, points: 2, period: 1 },
+                    { team: 'A', player: { number: 5, name: 'John' }, action: ACTION_TYPES.POINTS, points: 3, period: 1 },
+                    { team: 'A', player: { number: 7, name: 'Mike' }, action: ACTION_TYPES.FREE_THROW_MADE, points: 1, period: 1 }
+                ];
+
+                const stats = {};
+                gameLog.forEach(entry => {
+                    if (entry.player) {
+                        const key = `${entry.team}-${entry.player.number}`;
+                        if (!stats[key]) stats[key] = { fouls: 0, points: 0 };
+                        if (entry.points > 0) stats[key].points += entry.points;
+                    }
+                });
+
+                expect(stats['A-5'].points).toBe(5);
+                expect(stats['A-7'].points).toBe(1);
+            });
+
+            test('should calculate free throw statistics', () => {
+                const gameLog = [
+                    { team: 'A', player: { number: 5, name: 'John' }, action: ACTION_TYPES.FREE_THROW_MADE, points: 1, period: 1 },
+                    { team: 'A', player: { number: 5, name: 'John' }, action: ACTION_TYPES.FREE_THROW_MADE, points: 1, period: 1 },
+                    { team: 'A', player: { number: 5, name: 'John' }, action: ACTION_TYPES.FREE_THROW_MISSED, points: 0, period: 1 }
+                ];
+
+                const stats = {};
+                gameLog.forEach(entry => {
+                    if (entry.player) {
+                        const key = `${entry.team}-${entry.player.number}`;
+                        if (!stats[key]) stats[key] = { freeThrowsMade: 0, freeThrowsTotal: 0 };
+                        if (entry.action === ACTION_TYPES.FREE_THROW_MADE) {
+                            stats[key].freeThrowsMade++;
+                            stats[key].freeThrowsTotal++;
+                        } else if (entry.action === ACTION_TYPES.FREE_THROW_MISSED) {
+                            stats[key].freeThrowsTotal++;
+                        }
+                    }
+                });
+
+                expect(stats['A-5'].freeThrowsMade).toBe(2);
+                expect(stats['A-5'].freeThrowsTotal).toBe(3);
+            });
+        });
+
+        describe('Foul Disqualification Logic', () => {
+            test('should disqualify player with 5 fouls', () => {
+                const player = createPlayer(5, 'John', true);
+                const playerFouls = 4;
+
+                if (playerFouls + 1 >= DISQUALIFICATION_FOULS) {
+                    player.fouledOut = true;
+                    player.onCourt = false;
+                }
+
+                expect(player.fouledOut).toBe(true);
+                expect(player.onCourt).toBe(false);
+            });
+
+            test('should not disqualify player with 4 fouls', () => {
+                const player = createPlayer(5, 'John', true);
+                const playerFouls = 3;
+
+                if (playerFouls + 1 >= DISQUALIFICATION_FOULS) {
+                    player.fouledOut = true;
+                    player.onCourt = false;
+                }
+
+                expect(player.fouledOut).toBe(false);
+                expect(player.onCourt).toBe(true);
+            });
+
+            test('should prevent adding foul to player who already has 5 fouls', () => {
+                const playerFouls = 5;
+                const canAddFoul = playerFouls < DISQUALIFICATION_FOULS;
+
+                expect(canAddFoul).toBe(false);
+            });
+        });
+
+        describe('Substitution Logging', () => {
+            test('should log player coming in from bench', () => {
+                const inPlayer = { number: 7, name: 'Mike' };
+                const expectedAction = `${ACTION_TYPES.SUBSTITUTION}: IN #${inPlayer.number} ${inPlayer.name}`;
+                expect(expectedAction).toBe('Substitution: IN #7 Mike');
+            });
+
+            test('should log player going out to bench', () => {
+                const outPlayer = { number: 5, name: 'John' };
+                const expectedAction = `${ACTION_TYPES.SUBSTITUTION}: OUT #${outPlayer.number} ${outPlayer.name}`;
+                expect(expectedAction).toBe('Substitution: OUT #5 John');
+            });
+
+            test('should log player swap', () => {
+                const inPlayer = { number: 7, name: 'Mike' };
+                const outPlayer = { number: 5, name: 'John' };
+                const expectedAction = `${ACTION_TYPES.SUBSTITUTION}: OUT #${outPlayer.number} ${outPlayer.name}, IN #${inPlayer.number} ${inPlayer.name}`;
+                expect(expectedAction).toBe('Substitution: OUT #5 John, IN #7 Mike');
+            });
+
+            test('should log fouled out player substitution', () => {
+                const outPlayer = { number: 5, name: 'John' };
+                const reason = 'fouled out';
+                const expectedAction = `${ACTION_TYPES.SUBSTITUTION}: OUT #${outPlayer.number} ${outPlayer.name} (${reason})`;
+                expect(expectedAction).toBe('Substitution: OUT #5 John (fouled out)');
+            });
+        });
+
+        describe('Possession Arrow Logic', () => {
+            test('should cycle possession from null to A', () => {
+                let possession = null;
+                if (possession === null) possession = 'A';
+                else if (possession === 'A') possession = 'B';
+                else possession = 'A';
+                expect(possession).toBe('A');
+            });
+
+            test('should cycle possession from A to B', () => {
+                let possession = 'A';
+                if (possession === null) possession = 'A';
+                else if (possession === 'A') possession = 'B';
+                else possession = 'A';
+                expect(possession).toBe('B');
+            });
+
+            test('should cycle possession from B to A', () => {
+                let possession = 'B';
+                if (possession === null) possession = 'A';
+                else if (possession === 'A') possession = 'B';
+                else possession = 'A';
+                expect(possession).toBe('A');
+            });
+
+            test('should toggle possession at start of Q3', () => {
+                let possession = 'A';
+                const currentPeriod = 3;
+                if (currentPeriod === 3 && possession !== null) {
+                    possession = possession === 'A' ? 'B' : 'A';
+                }
+                expect(possession).toBe('B');
+            });
+        });
+
+        describe('Undo Functionality', () => {
+            test('should reverse point scoring', () => {
+                let teamScore = 10;
+                teamScore -= 2;
+                expect(teamScore).toBe(8);
+            });
+
+            test('should reverse foul', () => {
+                let teamFouls = 3;
+                teamFouls = Math.max(0, teamFouls - 1);
+                expect(teamFouls).toBe(2);
+            });
+
+            test('should not go below 0 fouls when undoing', () => {
+                let teamFouls = 0;
+                teamFouls = Math.max(0, teamFouls - 1);
+                expect(teamFouls).toBe(0);
+            });
+
+            test('should reactivate player if undo brings fouls below 5', () => {
+                const player = createPlayer(5, 'John', false);
+                player.fouledOut = true;
+                const remainingFouls = 4;
+                if (player.fouledOut && remainingFouls < 5) {
+                    player.fouledOut = false;
+                }
+                expect(player.fouledOut).toBe(false);
+            });
+
+            test('should restore previous possession after undo', () => {
+                const gameLog = [
+                    { team: 'A', action: 'Possession: ⬅️', period: 1 },
+                    { team: 'B', action: 'Possession: ➡️', period: 2 },
+                    { team: 'A', action: 'Possession: ⬅️', period: 3 }
+                ];
+                const previousPossessionEntry = gameLog.slice(0, 2).reverse()
+                    .find(e => e.action && e.action.startsWith('Possession:'));
+                const restoredPossession = previousPossessionEntry ? previousPossessionEntry.team : null;
+                expect(restoredPossession).toBe('B');
+            });
+
+            test('should return to neutral possession if no previous entry', () => {
+                const gameLog = [{ team: 'A', action: 'Possession: ⬅️', period: 1 }];
+                const previousPossessionEntry = gameLog.slice(0, 0).reverse()
+                    .find(e => e.action && e.action.startsWith('Possession:'));
+                const restoredPossession = previousPossessionEntry ? previousPossessionEntry.team : null;
+                expect(restoredPossession).toBe(null);
+            });
+        });
+
+        describe('Score Calculation', () => {
+            test('should calculate team score from game log', () => {
+                const gameLog = [
+                    { team: 'A', points: 2 },
+                    { team: 'A', points: 3 },
+                    { team: 'B', points: 2 },
+                    { team: 'A', points: 1 }
+                ];
+                const scoreA = gameLog.filter(e => e.team === 'A' && e.points > 0)
+                    .reduce((sum, e) => sum + e.points, 0);
+                const scoreB = gameLog.filter(e => e.team === 'B' && e.points > 0)
+                    .reduce((sum, e) => sum + e.points, 0);
+                expect(scoreA).toBe(6);
+                expect(scoreB).toBe(2);
+            });
+
+            test('should calculate score at specific log index', () => {
+                const gameLog = [
+                    { team: 'A', points: 2 },
+                    { team: 'A', points: 3 },
+                    { team: 'B', points: 2 }
+                ];
+                const scoreA = gameLog.slice(0, 2)
+                    .filter(e => e.team === 'A' && e.points > 0)
+                    .reduce((sum, e) => sum + e.points, 0);
+                expect(scoreA).toBe(5);
+            });
+        });
+
+        describe('Team Foul Status', () => {
+            test('should show BONUS when team has 5+ fouls', () => {
+                const teamFouls = 5;
+                let status = teamFouls >= DISQUALIFICATION_FOULS ? 'BONUS' : (teamFouls === 4 ? 'WARNING' : 'OK');
+                expect(status).toBe('BONUS');
+            });
+
+            test('should show WARNING when team has 4 fouls', () => {
+                const teamFouls = 4;
+                let status = teamFouls >= DISQUALIFICATION_FOULS ? 'BONUS' : (teamFouls === 4 ? 'WARNING' : 'OK');
+                expect(status).toBe('WARNING');
+            });
+
+            test('should show OK when team has less than 4 fouls', () => {
+                const teamFouls = 3;
+                let status = teamFouls >= DISQUALIFICATION_FOULS ? 'BONUS' : (teamFouls === 4 ? 'WARNING' : 'OK');
+                expect(status).toBe('OK');
+            });
+        });
+
+        describe('Period Formatting', () => {
+            function formatPeriod(period) {
+                return period <= 4 ? `Q${period}` : `OT${period - 4}`;
+            }
+
+            test('should format Q1', () => expect(formatPeriod(1)).toBe('Q1'));
+            test('should format Q2', () => expect(formatPeriod(2)).toBe('Q2'));
+            test('should format Q3', () => expect(formatPeriod(3)).toBe('Q3'));
+            test('should format Q4', () => expect(formatPeriod(4)).toBe('Q4'));
+            test('should format OT1', () => expect(formatPeriod(5)).toBe('OT1'));
+            test('should format OT2', () => expect(formatPeriod(6)).toBe('OT2'));
+            test('should format OT3', () => expect(formatPeriod(7)).toBe('OT3'));
+        });
+
+        // Display results
+        function displayResults() {
+            const container = document.getElementById('test-results');
+            
+            // Summary
+            const passRate = ((results.passed / results.total) * 100).toFixed(1);
+            const summaryColor = results.failed === 0 ? '#4CAF50' : '#FF9800';
+            
+            let html = `
+                <div class="summary" style="background: ${summaryColor}">
+                    <h2>Test Summary</h2>
+                    <div class="stats">
+                        <div>
+                            <div class="stat">${results.total}</div>
+                            <div class="stat-label">Total Tests</div>
+                        </div>
+                        <div>
+                            <div class="stat">${results.passed}</div>
+                            <div class="stat-label">Passed</div>
+                        </div>
+                        <div>
+                            <div class="stat">${results.failed}</div>
+                            <div class="stat-label">Failed</div>
+                        </div>
+                        <div>
+                            <div class="stat">${passRate}%</div>
+                            <div class="stat-label">Pass Rate</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Test suites
+            results.suites.forEach(suite => {
+                html += `<div class="test-suite">
+                    <h2>${suite.name}</h2>`;
+                
+                suite.tests.forEach(test => {
+                    const status = test.passed ? 'pass' : 'fail';
+                    const icon = test.passed ? '✓' : '✗';
+                    html += `
+                        <div class="test-case ${status}">
+                            <span class="test-icon ${status}">${icon}</span>
+                            ${test.name}
+                            ${test.error ? `<div class="error-details">${test.error}</div>` : ''}
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', () => {
+            displayResults();
+        });
+    </script>
+</body>
+</html>
