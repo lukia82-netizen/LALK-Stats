@@ -57,8 +57,9 @@
                                 <h3>Players (Click 🏀 to put on court)</h3>
                                 <div class="player-item" v-for="(player, index) in team.players" :key="index">
                                     <button class="btn btn-small" 
-                                            :style="{background: player.onCourt ? '#10b981' : '#6b7280', color: 'white', padding: '8px 12px'}"
+                                            :style="{background: player.onCourt ? '#10b981' : '#6b7280', color: 'white', padding: '8px 12px', opacity: gameReady ? 0.5 : 1, cursor: gameReady ? 'not-allowed' : 'pointer'}"
                                             @click="togglePlayerCourt(teamId, index)"
+                                            :disabled="gameReady"
                                             title="Toggle court/bench">
                                         {{ player.onCourt ? '🏀' : '💺' }}
                                     </button>
@@ -167,12 +168,12 @@
                                 <button class="action-btn points-3" 
                                         :class="{pending: isPendingAction(teamId, 'points', 3)}"
                                         @click="addPoints(teamId, 3)">🚀 +3</button>
-                                <button class="action-btn foul" 
-                                        :class="{pending: isPendingAction(teamId, 'foul', null)}"
-                                        @click="addFoul(teamId)">⚠️ Foul</button>
                                 <button class="action-btn free-throw" 
                                         :class="{pending: isPendingAction(teamId, 'freeThrow', false)}"
                                         @click="addFreeThrow(teamId, false)">❌ FT Miss</button>
+                                <button class="action-btn foul" 
+                                        :class="{pending: isPendingAction(teamId, 'foul', null)}"
+                                        @click="addFoul(teamId)">⚠️ Foul</button>
                                 <button class="action-btn" 
                                         style="background: #ff9800; color: white;"
                                         @click="addTimeout(teamId)"

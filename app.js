@@ -84,8 +84,8 @@ class Team {
         this.isHomeTeam = isHomeTeam;
     }
 
-    addPlayer(number = '', name = '', onCourt = false) {
-        this.players.push({ number, name, onCourt });
+    addPlayer(number = '', name = '', onCourt = false, wasStarter = false) {
+        this.players.push({ number, name, onCourt, wasStarter });
     }
 
     removePlayer(index) {
@@ -288,6 +288,10 @@ createApp({
         },
 
         togglePlayerCourt(team, index) {
+            if (this.gameReady) {
+                alert('Cannot change starting lineup during the game!');
+                return;
+            }
             this.getTeam(team).togglePlayerCourt(index);
         },
 
@@ -410,7 +414,7 @@ createApp({
                         team,
                         teamName: teamData.name,
                         action: `${ACTION_TYPES.SUBSTITUTION}: OUT #${draggedPlayer.number} ${draggedPlayer.name}, IN #${targetPlayer.number} ${targetPlayer.name}`,
-                        player: null,
+                        player: { number: targetPlayer.number, name: targetPlayer.name },
                         period: this.currentPeriod
                     });
                 } else if (!draggedWasOnCourt && targetWasOnCourt) {
@@ -419,7 +423,7 @@ createApp({
                         team,
                         teamName: teamData.name,
                         action: `${ACTION_TYPES.SUBSTITUTION}: OUT #${targetPlayer.number} ${targetPlayer.name}, IN #${draggedPlayer.number} ${draggedPlayer.name}`,
-                        player: null,
+                        player: { number: draggedPlayer.number, name: draggedPlayer.name },
                         period: this.currentPeriod
                     });
                 }
@@ -479,6 +483,10 @@ createApp({
         startGame() {
             if (!this.canStartGame) return;
             
+            // Mark starting lineup
+            this.teamA.players.forEach(p => p.wasStarter = p.onCourt);
+            this.teamB.players.forEach(p => p.wasStarter = p.onCourt);
+            
             this.gameReady = true;
             this.currentView = 'game';
             this.resetScores();
@@ -493,6 +501,11 @@ createApp({
             if (!confirm('Are you sure you want to reset the game? All data will be lost.')) {
                 return;
             }
+            this.gameReady = false;
+            this.currentView = 'setup';
+            // Clear starting lineup flags
+            this.teamA.players.forEach(p => p.wasStarter = false);
+            this.teamB.players.forEach(p => p.wasStarter = false);
             this.resetScores();
             this.gameLog = [];
             this.currentPeriod = 1;
@@ -894,8 +907,8 @@ createApp({
         },
 
         getPlayerStatus(team, player) {
-            // Check if player was in starting lineup (onCourt property)
-            const wasStarter = player.onCourt === true;
+            // Check if player was in starting lineup
+            const wasStarter = player.wasStarter === true;
             const played = this.didPlayerPlay(team, player.number);
             
             if (wasStarter) {
