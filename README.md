@@ -17,8 +17,11 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
 #### 🎯 Zarządzanie Zespołami
 - Ręczne dodawanie zawodników z numerami
 - Import/export zespołów w formacie JSON
+- **Gotowe składy LALK**: 10 zespołów z sezonu 2024/2025 w folderze `teams/`
 - Oznaczanie składu podstawowego (5 zawodników na boisku)
+- **Blokada składu**: Po rozpoczęciu meczu skład podstawowy nie może być zmieniony
 - Zarządzanie ławką rezerwowych
+- **Reset Game**: Dostępny w widoku setup i game, powraca do ustawień
 
 #### 🏀 Prowadzenie Meczu
 - **Punktacja**: +1, +2, +3 punkty z ikonami (🎯 🏀 🚀)
@@ -35,9 +38,14 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
 #### 👥 Zmiany Zawodników (NOWE!)
 - **Drag & Drop**: Przeciągnij zawodnika i upuść na innego aby zamienić pozycje
 - **Oznaczenia**: 🏀 ON COURT (5 max) | 💺 RESERVES
+- **Status w protokole**: 
+  - ⭕ (O) - zawodnicy w składzie podstawowym
+  - X - zawodnicy rezerwowi którzy weszli na boisko
+  - -- - zawodnicy którzy nie zagrali
+- **Śledzenie rezerwowych**: Zmiana automatycznie rejestrowana w protokole
 - **Wizualizacja**: Tylko nazwiska, duże przyciski (90×75px)
 - **Responsywność**: Optymalizacja dla ekranów dotykowych
-- **Scrollowanie**: Sekcja zawodników przewijalna, przyciski akcji zawsze widoczne
+- **Brak przewijania**: Cała sekcja zawodników widoczna bez scrollowania
 
 #### 📊 Statystyki Live
 - Wynik meczu w czasie rzeczywistym
@@ -87,9 +95,10 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
 #### 1. Setup (⚙️ zakładka)
 Przygotowanie zespołów przed meczem:
 - Wprowadź nazwy zespołów (Home/Away)
-- Dodaj zawodników z numerami
+- Dodaj zawodników z numerami LUB importuj gotowy zespół z `teams/`
 - Kliknij ikonę 🏀/💺 aby oznaczyć skład podstawowy (5 zawodników max)
-- Opcjonalnie: importuj gotowy skład z JSON
+- **WAŻNE**: Po rozpoczęciu meczu skład podstawowy zostanie zablokowany
+- Opcjonalnie: użyj **Reset Game** aby wyczyścić dane
 - Kliknij **▶️ Rozpocznij Mecz**
 
 #### 2. Game (🎮 zakładka)
@@ -153,6 +162,17 @@ FIBA/
 ├── index-refactored.html   # Główny HTML (modułowy)
 ├── app.js                  # Logika aplikacji (Vue.js + OOP)
 ├── styles.css              # Style CSS (responsive)
+├── teams/                  # Gotowe składy zespołów LALK
+│   ├── Old_Boys_Rawicz.json
+│   ├── Pustynne_Jastrzebie.json
+│   ├── T-Mobile_Team_Leszno.json
+│   ├── Bestie.json
+│   ├── WSTK_Wschowa.json
+│   ├── Team_One.json
+│   ├── Basket_Gora.json
+│   ├── Rydzyna_Team.json
+│   ├── Zaczarowany_Pierniczek_Gostyn.json
+│   └── Wypalone_Zapalki_Gostyn.json
 ├── index.html              # Legacy wersja (monolityczna, deprecated)
 ├── README.md               # Dokumentacja
 ├── REFACTORING.md          # Historia refaktoryzacji
@@ -308,13 +328,14 @@ FIBA/
 **Kontakt**: W razie problemów technicznych lub propozycji funkcjonalności, skontaktuj się z deweloperem.
 
 **Changelog**:
+- **v2.2** (Grudzień 2025): Blokada składu + status zawodników (O/X/--) + zespoły LALK + pozycje przycisków
 - **v2.1** (Grudzień 2025): Zegar gry + akcje oczekujące + reset fauli co kwartę
 - **v2.0** (Grudzień 2025): Refaktoryzacja modułowa + drag & drop substitutions
 - **v1.0** (Grudzień 2025): Wersja początkowa z pełnym protokołem meczu
 
 ---
 
-**Wersja**: 2.1  
+**Wersja**: 2.2  
 **Data ostatniej aktualizacji**: Grudzień 23, 2025  
 **Deweloper**: Łukasz Nowak + GitHub Copilot (AI)  
 **Stack**: Vue.js 3 Production, HTML5, CSS3 Grid/Flexbox, LocalStorage API, Custom Fonts
