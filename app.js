@@ -25,6 +25,11 @@ const ACTION_TYPES = {
     SUBSTITUTION: 'Substitution'
 };
 
+// Game configuration constants
+const SWAP_ANIMATION_DURATION_MS = 1500;
+const TIMEOUT_DURATION_SEC = 60;
+const DISQUALIFICATION_FOULS = 5;
+
 // === UTILITY FUNCTIONS ===
 const Utils = {
     getCurrentTime(minutes, seconds) {
@@ -260,7 +265,7 @@ createApp({
 
             // === TIMEOUT TIMER ===
             timeoutTeam: null, // 'A' or 'B'
-            timeoutSeconds: 60,
+            timeoutSeconds: TIMEOUT_DURATION_SEC,
             timeoutInterval: null,
 
             // === DRAG AND DROP STATE ===
@@ -294,13 +299,13 @@ createApp({
 
         // === TEAM FOUL STATUS ===
         teamAFoulStatus() {
-            if (this.teamA.fouls >= 5) return 'BONUS';
+            if (this.teamA.fouls >= DISQUALIFICATION_FOULS) return 'BONUS';
             if (this.teamA.fouls === 4) return 'WARNING';
             return 'OK';
         },
         
         teamBFoulStatus() {
-            if (this.teamB.fouls >= 5) return 'BONUS';
+            if (this.teamB.fouls >= DISQUALIFICATION_FOULS) return 'BONUS';
             if (this.teamB.fouls === 4) return 'WARNING';
             return 'OK';
         },
@@ -372,7 +377,7 @@ createApp({
             if (!player) return;
             
             // Block if player has fouled out
-            if (player.fouledOut || this.getPlayerFouls(team, player.number) >= 5) {
+            if (player.fouledOut || this.getPlayerFouls(team, player.number) >= DISQUALIFICATION_FOULS) {
                 alert(`Player #${player.number} has fouled out and cannot play!`);
                 return;
             }
@@ -393,7 +398,7 @@ createApp({
             
             // If clicking same player, deselect
             if (this.selectedPlayer && this.selectedPlayer.team === team && 
-                this.selectedPlayer.number == player.number) {
+                this.selectedPlayer.number === player.number) {
                 this.selectedPlayer = null;
                 return;
             }
@@ -405,12 +410,12 @@ createApp({
         isPlayerSelected(team, player) {
             return this.selectedPlayer && 
                    this.selectedPlayer.team === team && 
-                   this.selectedPlayer.number == player.number;
+                   this.selectedPlayer.number === player.number;
         },
 
         isPlayerRecentlySwapped(team, player) {
             return this.recentlySwappedPlayers.some(p => 
-                p.team === team && p.number == player.number
+                p.team === team && p.number === player.number
             );
         },
 
@@ -454,10 +459,10 @@ createApp({
                 { team, number: clickedPlayer.number }
             ];
             
-            // Clear highlight after 1.5 seconds
+            // Clear highlight after animation
             setTimeout(() => {
                 this.recentlySwappedPlayers = [];
-            }, 1500);
+            }, SWAP_ANIMATION_DURATION_MS);
             
             // Clear selection
             this.selectedPlayer = null;
@@ -491,7 +496,7 @@ createApp({
             const player = teamData.players[index];
             
             // Block dragging if player has fouled out
-            if (player.fouledOut || this.getPlayerFouls(team, player.number) >= 5) {
+            if (player.fouledOut || this.getPlayerFouls(team, player.number) >= DISQUALIFICATION_FOULS) {
                 event.preventDefault();
                 alert(`Player #${player.number} has fouled out and cannot play!`);
                 return;
@@ -580,14 +585,14 @@ createApp({
                 const draggedPlayer = this.draggedPlayer;
                 
                 // Block if dragged player has fouled out
-                if (draggedPlayer.fouledOut || this.getPlayerFouls(team, draggedPlayer.number) >= 5) {
+                if (draggedPlayer.fouledOut || this.getPlayerFouls(team, draggedPlayer.number) >= DISQUALIFICATION_FOULS) {
                     alert(`Player #${draggedPlayer.number} has fouled out and cannot play!`);
                     this.clearDragState();
                     return;
                 }
                 
                 // Block if target player has fouled out and we're trying to put them on court
-                if ((targetPlayer.fouledOut || this.getPlayerFouls(team, targetPlayer.number) >= 5) && draggedPlayer.onCourt) {
+                if ((targetPlayer.fouledOut || this.getPlayerFouls(team, targetPlayer.number) >= DISQUALIFICATION_FOULS) && draggedPlayer.onCourt) {
                     alert(`Player #${targetPlayer.number} has fouled out and cannot enter the court!`);
                     this.clearDragState();
                     return;
@@ -611,7 +616,7 @@ createApp({
                     this.recentlySwappedPlayers = this.recentlySwappedPlayers.filter(
                         p => !(p.team === team && (p.number === draggedPlayer.number || p.number === targetPlayer.number))
                     );
-                }, 1500);
+                }, SWAP_ANIMATION_DURATION_MS);
                 
                 // Log substitutions to game log
                 if (draggedWasOnCourt && !targetWasOnCourt) {
@@ -798,8 +803,8 @@ createApp({
             
             // Check if player already has 5 fouls
             const playerFouls = this.getPlayerFouls(team, this.selectedPlayer.number);
-            if (playerFouls >= 5) {
-                alert(`Player #${this.selectedPlayer.number} already has 5 fouls and is disqualified!`);
+            if (playerFouls >= DISQUALIFICATION_FOULS) {
+                alert(`Player #${this.selectedPlayer.number} already has ${DISQUALIFICATION_FOULS} fouls and is disqualified!`);
                 return;
             }
             
@@ -815,7 +820,7 @@ createApp({
             });
             
             // Check if player now has 5 fouls and disqualify them
-            if (playerFouls + 1 >= 5) {
+            if (playerFouls + 1 >= DISQUALIFICATION_FOULS) {
                 const playerIndex = teamData.players.findIndex(p => p.number === this.selectedPlayer.number);
                 if (playerIndex !== -1) {
                     const player = teamData.players[playerIndex];
@@ -1255,8 +1260,8 @@ createApp({
             } else if (action.type === 'foul') {
                 // Check if player already has 5 fouls
                 const playerFouls = this.getPlayerFouls(action.team, this.selectedPlayer.number);
-                if (playerFouls >= 5) {
-                    alert(`Player #${this.selectedPlayer.number} already has 5 fouls and is disqualified!`);
+                if (playerFouls >= DISQUALIFICATION_FOULS) {
+                    alert(`Player #${this.selectedPlayer.number} already has ${DISQUALIFICATION_FOULS} fouls and is disqualified!`);
                     this.selectedPlayer = null;
                     this.pendingAction = null;
                     return;
@@ -1272,7 +1277,7 @@ createApp({
                 });
                 
                 // Check if player now has 5 fouls and disqualify them
-                if (playerFouls + 1 >= 5) {
+                if (playerFouls + 1 >= DISQUALIFICATION_FOULS) {
                     const playerIndex = teamData.players.findIndex(p => p.number === this.selectedPlayer.number);
                     if (playerIndex !== -1) {
                         const player = teamData.players[playerIndex];
@@ -1344,7 +1349,7 @@ createApp({
             return this.gameLog
                 .filter(entry => entry.team === team && 
                                entry.player && 
-                               entry.player.number == playerNumber &&
+                               entry.player.number === playerNumber &&
                                entry.points > 0)
                 .reduce((sum, entry) => sum + entry.points, 0);
         },
@@ -1353,7 +1358,7 @@ createApp({
             return this.gameLog
                 .filter(entry => entry.team === team && 
                                entry.player && 
-                               entry.player.number == playerNumber &&
+                               entry.player.number === playerNumber &&
                                entry.action === ACTION_TYPES.FOUL)
                 .length;
         },
@@ -1362,7 +1367,7 @@ createApp({
             const entries = this.gameLog.filter(entry => 
                 entry.team === team && 
                 entry.player && 
-                entry.player.number == playerNumber &&
+                entry.player.number === playerNumber &&
                 (entry.action === ACTION_TYPES.FREE_THROW_MADE || 
                  entry.action === ACTION_TYPES.FREE_THROW_MISSED)
             );
@@ -1383,7 +1388,7 @@ createApp({
             return this.gameLog.some(entry => 
                 entry.team === team && 
                 entry.player && 
-                entry.player.number == playerNumber
+                entry.player.number === playerNumber
             );
         },
 
@@ -1611,14 +1616,14 @@ createApp({
             
             // Check if player started
             const teamData = this.getTeam(team);
-            const player = teamData.players.find(p => p.number == playerNumber);
+            const player = teamData.players.find(p => p.number === playerNumber);
             if (player && player.wasStarter) {
                 onCourt = true;
             }
             
             this.gameLog.forEach(entry => {
                 // Check for substitutions involving this player
-                if (entry.action === ACTION_TYPES.SUBSTITUTION && entry.player && entry.player.number == playerNumber && entry.team === team) {
+                if (entry.action === ACTION_TYPES.SUBSTITUTION && entry.player && entry.player.number === playerNumber && entry.team === team) {
                     onCourt = !onCourt; // Toggle on/off court
                 }
                 
@@ -1640,7 +1645,7 @@ createApp({
             const fieldGoals = this.gameLog.filter(entry => 
                 entry.team === team && 
                 entry.player && 
-                entry.player.number == playerNumber &&
+                entry.player.number === playerNumber &&
                 (entry.points === 2 || entry.points === 3)
             );
             
@@ -1660,7 +1665,15 @@ createApp({
                 gameClockSeconds: this.gameClockSeconds,
                 possessionArrow: this.possessionArrow
             };
-            localStorage.setItem('basketballGame', JSON.stringify(gameData));
+            try {
+                localStorage.setItem('basketballGame', JSON.stringify(gameData));
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    alert('Storage is full! Please export your game data to save it. Some features may not work properly.');
+                } else {
+                    console.error('Failed to save game data:', e);
+                }
+            }
         },
 
         loadFromLocalStorage() {
@@ -1817,6 +1830,11 @@ createApp({
         // Clean up game clock interval
         if (this.gameClockInterval) {
             clearInterval(this.gameClockInterval);
+        }
+        
+        // Clean up timeout interval
+        if (this.timeoutInterval) {
+            clearInterval(this.timeoutInterval);
         }
     }
 }).mount('#app');
