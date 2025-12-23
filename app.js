@@ -341,10 +341,98 @@ createApp({
             } else {
                 return `OT${this.currentPeriod - 4}`;
             }
+        },
+
+        /**
+         * Cached player statistics for performance optimization.
+         * Recalculates only when gameLog changes.
+         * @returns {Object} Map of 'team-playerNumber' to {fouls, points, freeThrowsMade, freeThrowsTotal}
+         */
+        playerStatsCache() {
+            const stats = {};
+            this.gameLog.forEach(entry => {
+                if (entry.player) {
+                    const key = `${entry.team}-${entry.player.number}`;
+                    if (!stats[key]) {
+                        stats[key] = { fouls: 0, points: 0, freeThrowsMade: 0, freeThrowsTotal: 0 };
+                    }
+                    
+                    if (entry.action === ACTION_TYPES.FOUL) {
+                        stats[key].fouls++;
+                    }
+                    if (entry.points > 0) {
+                        stats[key].points += entry.points;
+                    }
+                    if (entry.action === ACTION_TYPES.FREE_THROW_MADE) {
+                        stats[key].freeThrowsMade++;
+                        stats[key].freeThrowsTotal++;
+                    } else if (entry.action === ACTION_TYPES.FREE_THROW_MISSED) {
+                        stats[key].freeThrowsTotal++;
+                    }
+                }
+            });
+            return stats;
         }
     },
 
     methods: {
+        // ============================================
+        // LOGGING HELPERS
+        // ============================================
+        
+        /**
+         * Logs a possession arrow change to the game log.
+         * @param {string} team - The team that now has possession ('A' or 'B')
+         */
+        logPossessionChange(team) {
+            const arrow = team === 'A' ? '⬅️' : '➡️';
+            this.logAction({
+                team,
+                teamName: '',
+                action: `Possession: ${arrow}`,
+                player: null,
+                period: this.currentPeriod
+            });
+        },
+
+        /**
+         * Logs a player substitution to the game log.
+         * @param {string} team - The team making the substitution ('A' or 'B')
+         * @param {Object} inPlayer - Player entering the court (or null)
+         * @param {Object} outPlayer - Player leaving the court (or null)
+         * @param {string} [reason] - Optional reason (e.g., 'fouled out')
+         */
+        logSubstitution(team, inPlayer, outPlayer, reason = '') {
+            const teamData = this.getTeam(team);
+            let action;
+            let loggedPlayer;
+            
+            if (inPlayer && outPlayer) {
+                // Both players - standard swap
+                action = `${ACTION_TYPES.SUBSTITUTION}: OUT #${outPlayer.number} ${outPlayer.name}, IN #${inPlayer.number} ${inPlayer.name}`;
+                loggedPlayer = { number: inPlayer.number, name: inPlayer.name };
+            } else if (inPlayer) {
+                // Only player coming in
+                action = `${ACTION_TYPES.SUBSTITUTION}: IN #${inPlayer.number} ${inPlayer.name}`;
+                loggedPlayer = { number: inPlayer.number, name: inPlayer.name };
+            } else if (outPlayer) {
+                // Only player going out
+                const suffix = reason ? ` (${reason})` : '';
+                action = `${ACTION_TYPES.SUBSTITUTION}: OUT #${outPlayer.number} ${outPlayer.name}${suffix}`;
+                loggedPlayer = { number: outPlayer.number, name: outPlayer.name };
+            } else {
+                return; // No players specified
+            }
+            
+            this.logAction({
+                team,
+                teamName: teamData.name,
+                action,
+                player: loggedPlayer,
+                period: this.currentPeriod
+            });
+        },
+
         // ============================================
         // PLAYER MANAGEMENT
         // ============================================
@@ -419,6 +507,12 @@ createApp({
             );
         },
 
+        /**
+         * Attempts to substitute a player when two players are clicked.
+         * Validates that one player is on court and one is on bench, then swaps them.
+         * @param {string} team - The team making the substitution ('A' or 'B')
+         * @param {number} index - Index of the clicked player in the team's player array
+         */
         trySubstitution(team, index) {
             const teamData = this.getTeam(team);
             const clickedPlayer = teamData.players[index];
@@ -441,17 +535,10 @@ createApp({
             selectedPlayerObj.onCourt = !selectedPlayerObj.onCourt;
             clickedPlayer.onCourt = !clickedPlayer.onCourt;
             
-            // Log substitution
+            // Log substitution using helper
             const outPlayer = wasFirstOnCourt ? selectedPlayerObj : clickedPlayer;
             const inPlayer = wasFirstOnCourt ? clickedPlayer : selectedPlayerObj;
-            
-            this.logAction({
-                team,
-                teamName: teamData.name,
-                action: `${ACTION_TYPES.SUBSTITUTION}: OUT #${outPlayer.number} ${outPlayer.name}, IN #${inPlayer.number} ${inPlayer.name}`,
-                player: { number: inPlayer.number, name: inPlayer.name },
-                period: this.currentPeriod
-            });
+            this.logSubstitution(team, inPlayer, outPlayer);
             
             // Highlight both players that were swapped
             this.recentlySwappedPlayers = [
@@ -574,6 +661,13 @@ createApp({
             // Just prevent default to allow drop - no automatic swap
         },
 
+        /**
+         * Handles drag-and-drop substitution when a player is dropped onto another player.
+         * Validates foul status, swaps onCourt status, logs the substitution, and provides visual feedback.
+         * @param {string} team - The team performing the drag-and-drop ('A' or 'B')
+         * @param {number} targetIndex - Index of the target player being dropped onto
+         * @param {DragEvent} event - The drop event
+         */
         dropOnPlayer(team, targetIndex, event) {
             event.preventDefault();
             event.stopPropagation();
@@ -621,22 +715,10 @@ createApp({
                 // Log substitutions to game log
                 if (draggedWasOnCourt && !targetWasOnCourt) {
                     // Dragged player went to bench, target came to court
-                    this.logAction({
-                        team,
-                        teamName: teamData.name,
-                        action: `${ACTION_TYPES.SUBSTITUTION}: OUT #${draggedPlayer.number} ${draggedPlayer.name}, IN #${targetPlayer.number} ${targetPlayer.name}`,
-                        player: { number: targetPlayer.number, name: targetPlayer.name },
-                        period: this.currentPeriod
-                    });
+                    this.logSubstitution(team, targetPlayer, draggedPlayer);
                 } else if (!draggedWasOnCourt && targetWasOnCourt) {
                     // Dragged player came to court, target went to bench
-                    this.logAction({
-                        team,
-                        teamName: teamData.name,
-                        action: `${ACTION_TYPES.SUBSTITUTION}: OUT #${targetPlayer.number} ${targetPlayer.name}, IN #${draggedPlayer.number} ${draggedPlayer.name}`,
-                        player: { number: draggedPlayer.number, name: draggedPlayer.name },
-                        period: this.currentPeriod
-                    });
+                    this.logSubstitution(team, draggedPlayer, targetPlayer);
                 }
                 
                 this.saveToLocalStorage();
@@ -785,6 +867,12 @@ createApp({
             this.saveToLocalStorage();
         },
 
+        /**
+         * Adds a foul to a player and handles disqualification if they reach 5 fouls.
+         * Validates foul limits, logs the foul, removes player from court if disqualified,
+         * and plays audio feedback.
+         * @param {string} team - The team whose player committed the foul ('A' or 'B')
+         */
         addFoul(team) {
             // If no player selected, store as pending action
             if (!this.selectedPlayer) {
@@ -831,13 +919,7 @@ createApp({
                     
                     // Log substitution OUT if player was on court
                     if (wasOnCourt) {
-                        this.logAction({
-                            team,
-                            teamName: teamData.name,
-                            action: `${ACTION_TYPES.SUBSTITUTION}: OUT #${player.number} ${player.name} (fouled out)`,
-                            player: { number: player.number, name: player.name },
-                            period: this.currentPeriod
-                        });
+                        this.logSubstitution(team, null, player, 'fouled out');
                     }
                     
                     // Move player to end of bench by sorting - fouled out players go last
@@ -1018,16 +1100,7 @@ createApp({
                     // Toggle possession arrow at start of Q3 (second half)
                     if (this.currentPeriod === 3 && this.possessionArrow !== null) {
                         this.possessionArrow = this.possessionArrow === 'A' ? 'B' : 'A';
-                        
-                        // Log the possession change
-                        const arrow = this.possessionArrow === 'A' ? '⬅️' : '➡️';
-                        this.logAction({
-                            team: this.possessionArrow,
-                            teamName: '',
-                            action: `Possession: ${arrow}`,
-                            player: null,
-                            period: this.currentPeriod
-                        });
+                        this.logPossessionChange(this.possessionArrow);
                     }
                     
                     this.saveToLocalStorage();
@@ -1124,6 +1197,12 @@ createApp({
             this.gameLog.push(entry);
         },
 
+        /**
+         * Undoes a game log entry by reversing its effects on game state.
+         * Handles points, fouls, timeouts, free throws, and possession arrow changes.
+         * Special handling for fouled-out players and possession history.
+         * @param {number} index - Index in the reversed game log (0 is most recent)
+         */
         deleteLogEntry(index) {
             const entry = this.reversedGameLog[index];
             const actualIndex = this.gameLog.indexOf(entry);
@@ -1452,6 +1531,10 @@ createApp({
         // ============================================
         // POSSESSION ARROW
         // ============================================
+        /**
+         * Toggles the possession arrow between teams and logs the change.
+         * Cycles through: null → A → B → A
+         */
         togglePossessionArrow() {
             const oldPossession = this.possessionArrow;
             
@@ -1463,16 +1546,8 @@ createApp({
                 this.possessionArrow = 'A';
             }
             
-            // Log possession change
-            const newTeam = this.possessionArrow;
-            const arrow = newTeam === 'A' ? '⬅️' : '➡️';
-            this.logAction({
-                team: newTeam,
-                teamName: '',
-                action: `Possession: ${arrow}`,
-                player: null,
-                period: this.currentPeriod
-            });
+            // Log possession change using helper
+            this.logPossessionChange(this.possessionArrow);
             
             this.saveToLocalStorage();
         },

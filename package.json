@@ -1,0 +1,22 @@
+{
+  "name": "basketball-scoreboard",
+  "version": "2.4.0",
+  "description": "FIBA Basketball Scoreboard with game logging and statistics",
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0"
+  },
+  "keywords": [
+    "basketball",
+    "scoreboard",
+    "FIBA",
+    "sports"
+  ],
+  "author": "",
+  "license": "MIT"
+}
