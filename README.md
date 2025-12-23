@@ -28,6 +28,7 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
 - **Faule**: Osobiste i zespołowe z licznikiem (⚠️) - resetowane co kwartę
 - **System 5 fauli**: Automatyczna dyskwalifikacja gracza po 5 faulach
   - Gracz automatycznie schodzi z boiska
+  - **Automatyczne logowanie wymiany**: "OUT #X Player Name (fouled out)" w protokole
   - Niemożliwość ponownego wejścia na boisko
   - Dźwięk gwizdka przy 5. faulu
   - Wizualne oznaczenie (❌5, czerwona ramka, przekreślenie)
@@ -35,8 +36,10 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
   - Wsparcie undo: odwołanie 5. faula przywraca gracza do gry
 - **Rzuty wolne**: Celne (+1 pkt) i niecelne z ikoną (❌)
 - **Timeouty**: Limit 5 na mecz z kontrolą dostępności (⏸️)
-- **4 kwarty**: Pełne wsparcie z przełączaniem (Q1-Q4), automatyczny reset fauli
+- **4 kwarty**: Pełne wsparcie z przełączaniem (Q1-Q4)
+  - **Potwierdzenie czyszczenia fauli**: Przy zmianie kwarty system pyta czy wyczyścić faule zespołowe
 - **Zegar meczu**: 10-minutowy odliczający timer z kontrolą start/pause/reset
+  - **Potwierdzenie resetu**: Reset zegara wymaga potwierdzenia (tylko przy kliknięciu przycisku)
 - **Niestandardowy czas**: Podwójne kliknięcie zegara do ustawienia własnego czasu (MM:SS)
 - **Elastyczny workflow**: Wybierz zawodnika potem akcję LUB akcję potem zawodnika
 - **Akcje oczekujące**: Żółte podświetlenie akcji czekających na wybór zawodnika
@@ -45,8 +48,13 @@ Profesjonalna aplikacja webowa dla sędziów stolikowych do prowadzenia pełnej 
 #### 👥 Zmiany Zawodników (NOWE!)
 - **Kliknięcie**: Kliknij gracza → kliknij innego gracza z tej samej drużyny → automatyczna wymiana
 - **Drag & Drop**: Przeciągnij zawodnika i upuść na innego aby zamienić pozycje (alternatywna metoda)
+  - Przeciąganie z rezerw na boisko: logowane jako "IN"
+  - Przeciąganie z boiska na ławkę: logowane jako "OUT"
+  - Zamiana dwóch graczy: logowane jako "OUT + IN"
 - **Blokada wykluczonych**: Gracze z 5 faulami nie mogą wchodzić na boisko
 - **Wizualne potwierdzenie**: Po wymianie obaj gracze podświetleni na **zielono** z efektem pulsowania (1.5s)
+  - Działa zarówno dla kliknięcia jak i drag-and-drop
+- **Automatyczne logowanie**: Wszystkie zmiany zawodników są rejestrowane w protokole
 - **Oznaczenia**: 🏀 ON COURT (5 max) | 💺 RESERVES
 - **Status w protokole**: 
   - ⭕ (O) - zawodnicy w składzie podstawowym
@@ -350,6 +358,12 @@ FIBA/
 **Kontakt**: W razie problemów technicznych lub propozycji funkcjonalności, skontaktuj się z deweloperem.
 
 **Changelog**:
+- **v2.4** (Grudzień 2025): Ulepszenia logowania + potwierdzenia akcji:
+  - Logowanie wymian przy drag-and-drop (IN/OUT)
+  - Automatyczne logowanie wymiany przy dyskwalifikacji (5 fauli)
+  - Potwierdzenie czyszczenia fauli przy zmianie kwarty
+  - Potwierdzenie resetu zegara (tylko przy kliknięciu przycisku)
+  - Usunięto alert "Game started! Good luck!"
 - **v2.3** (Grudzień 2025): System wymian jednym kliknięciem + animacje po wymianie + 5-foul system + reaktywacja po undo
 - **v2.2** (Grudzień 2025): Blokada składu + status zawodników (O/X/--) + zespoły LALK + pozycje przycisków
 - **v2.1** (Grudzień 2025): Zegar gry + akcje oczekujące + reset fauli co kwartę
@@ -358,7 +372,7 @@ FIBA/
 
 ---
 
-**Wersja**: 2.3  
+**Wersja**: 2.4  
 **Data ostatniej aktualizacji**: Grudzień 23, 2025  
 **Deweloper**: Łukasz Nowak + GitHub Copilot (AI)  
 **Stack**: Vue.js 3 Production, HTML5, CSS3 Grid/Flexbox, LocalStorage API, Custom Fonts, CSS Animations

@@ -1010,8 +1010,22 @@ createApp({
                     this.teamA.fouls = 0;
                     this.teamB.fouls = 0;
                     
+                    // Toggle possession arrow at start of Q3 (second half)
+                    if (this.currentPeriod === 3 && this.possessionArrow !== null) {
+                        this.possessionArrow = this.possessionArrow === 'A' ? 'B' : 'A';
+                        
+                        // Log the possession change
+                        const arrow = this.possessionArrow === 'A' ? '⬅️' : '➡️';
+                        this.logAction({
+                            team: this.possessionArrow,
+                            teamName: '',
+                            action: `Possession: ${arrow}`,
+                            player: null,
+                            period: this.currentPeriod
+                        });
+                    }
+                    
                     this.saveToLocalStorage();
-                    alert(`Quarter ${this.currentPeriod} ready. Press Start to begin the clock.`);
                 }
             } else if (this.currentPeriod === 4) {
                 // End of Q4 - check for overtime
@@ -1168,6 +1182,23 @@ createApp({
                 // Stop timeout timer if this team's timeout is currently active
                 if (this.timeoutTeam === entry.team) {
                     this.stopTimeoutTimer();
+                }
+            }
+            
+            // Handle possession arrow undo
+            if (entry.action && entry.action.startsWith('Possession:')) {
+                // Find if there was a previous possession entry
+                const previousPossessionEntry = this.gameLog
+                    .slice(0, actualIndex)
+                    .reverse()
+                    .find(e => e.action && e.action.startsWith('Possession:'));
+                
+                if (previousPossessionEntry) {
+                    // Set to the previous possession team
+                    this.possessionArrow = previousPossessionEntry.team;
+                } else {
+                    // No previous possession entry, go back to neutral
+                    this.possessionArrow = null;
                 }
             }
 
@@ -1417,6 +1448,8 @@ createApp({
         // POSSESSION ARROW
         // ============================================
         togglePossessionArrow() {
+            const oldPossession = this.possessionArrow;
+            
             if (this.possessionArrow === null) {
                 this.possessionArrow = 'A';
             } else if (this.possessionArrow === 'A') {
@@ -1424,6 +1457,18 @@ createApp({
             } else {
                 this.possessionArrow = 'A';
             }
+            
+            // Log possession change
+            const newTeam = this.possessionArrow;
+            const arrow = newTeam === 'A' ? '⬅️' : '➡️';
+            this.logAction({
+                team: newTeam,
+                teamName: '',
+                action: `Possession: ${arrow}`,
+                player: null,
+                period: this.currentPeriod
+            });
+            
             this.saveToLocalStorage();
         },
 

@@ -1,6 +1,27 @@
 # Basketball Scoreboard - New Features
 
-## Version 2.3 - Latest Updates
+## Version 2.4 - Latest Updates
+
+### 📝 Enhanced Game Logging
+- **Drag-and-drop substitutions** now logged in game protocol:
+  - Dragging from reserves to court: "Substitution: IN #X Player Name"
+  - Dragging from court to bench: "Substitution: OUT #X Player Name"
+  - Swapping two players: "Substitution: OUT #X, IN #Y"
+- **5-foul disqualification** automatically logs substitution:
+  - When player gets 5th foul: "Substitution: OUT #X Player Name (fouled out)"
+  - Only logged if player was on court when disqualified
+- **Green pulse animation** for drag-and-drop swaps (matching click substitutions)
+
+### ✅ User Confirmations
+- **Period change confirmation**: When clicking Q1-Q4 buttons, asks "Do you want to clear team fouls for the new period?"
+  - Allows manual control of foul reset between quarters
+  - Useful for handling interruptions or corrections
+- **Clock reset confirmation**: Clicking 🔄 Reset button asks "Are you sure you want to reset the game clock to 10:00?"
+  - Programmatic resets (during game start, quarter end) do NOT show confirmation
+  - Prevents accidental clock resets during live game
+- **Removed startup alert**: "Game started! Good luck!" message removed for cleaner workflow
+
+## Version 2.3 - Previous Updates
 
 ### 🎯 Player Foul Tracking
 - Individual player fouls are now tracked
@@ -139,6 +160,12 @@
 ✅ Mobile UI responsive
 ✅ Browser warns on page leave
 ✅ +/- stat calculates correctly
+✅ Drag-and-drop substitutions logged correctly
+✅ 5-foul disqualification logs substitution OUT
+✅ Period change asks about clearing fouls
+✅ Clock reset button shows confirmation
+✅ Programmatic clock reset works without confirmation
+✅ Green pulse animation on drag-and-drop swaps
 
 ## Future Enhancements (Not Implemented)
 - Shot clock (24-second timer)
