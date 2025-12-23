@@ -1,7 +1,7 @@
 {
   "name": "basketball-scoreboard",
-  "version": "2.4.0",
-  "description": "FIBA Basketball Scoreboard with game logging and statistics",
+  "version": "2.5.0",
+  "description": "FIBA Basketball Scoreboard with game logging, statistics, and comprehensive testing",
   "scripts": {
     "test": "vitest",
     "test:ui": "vitest --ui",
