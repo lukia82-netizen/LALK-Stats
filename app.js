@@ -863,6 +863,16 @@ createApp({
                 });
             }
 
+            // Add green pulse animation feedback
+            const playerToHighlight = { team: this.selectedPlayer.team, number: this.selectedPlayer.number };
+            this.recentlySwappedPlayers.push(playerToHighlight);
+
+            setTimeout(() => {
+                this.recentlySwappedPlayers = this.recentlySwappedPlayers.filter(
+                    p => !(p.team === playerToHighlight.team && p.number === playerToHighlight.number)
+                );
+            }, SWAP_ANIMATION_DURATION_MS);
+
             this.selectedPlayer = null;
             this.saveToLocalStorage();
         },
@@ -906,6 +916,16 @@ createApp({
                 player: this.selectedPlayer,
                 period: this.currentPeriod
             });
+            
+            // Add green pulse animation feedback
+            const playerToHighlight = { team, number: this.selectedPlayer.number };
+            this.recentlySwappedPlayers.push(playerToHighlight);
+
+            setTimeout(() => {
+                this.recentlySwappedPlayers = this.recentlySwappedPlayers.filter(
+                    p => !(p.team === playerToHighlight.team && p.number === playerToHighlight.number)
+                );
+            }, SWAP_ANIMATION_DURATION_MS);
             
             // Check if player now has 5 fouls and disqualify them
             if (playerFouls + 1 >= DISQUALIFICATION_FOULS) {
@@ -969,6 +989,16 @@ createApp({
                 period: this.currentPeriod,
                 points: made ? POINT_VALUES.FREE_THROW : 0
             });
+
+            // Add green pulse animation feedback
+            const playerToHighlight = { team: this.selectedPlayer.team, number: this.selectedPlayer.number };
+            this.recentlySwappedPlayers.push(playerToHighlight);
+
+            setTimeout(() => {
+                this.recentlySwappedPlayers = this.recentlySwappedPlayers.filter(
+                    p => !(p.team === playerToHighlight.team && p.number === playerToHighlight.number)
+                );
+            }, SWAP_ANIMATION_DURATION_MS);
 
             this.selectedPlayer = null;
             this.saveToLocalStorage();
@@ -1336,6 +1366,16 @@ createApp({
                         points: action.points
                     });
                 }
+                
+                // Add green pulse animation feedback
+                const playerToHighlight = { team: this.selectedPlayer.team, number: this.selectedPlayer.number };
+                this.recentlySwappedPlayers.push(playerToHighlight);
+
+                setTimeout(() => {
+                    this.recentlySwappedPlayers = this.recentlySwappedPlayers.filter(
+                        p => !(p.team === playerToHighlight.team && p.number === playerToHighlight.number)
+                    );
+                }, SWAP_ANIMATION_DURATION_MS);
             } else if (action.type === 'foul') {
                 // Check if player already has 5 fouls
                 const playerFouls = this.getPlayerFouls(action.team, this.selectedPlayer.number);
@@ -1354,6 +1394,16 @@ createApp({
                     player: this.selectedPlayer,
                     period: this.currentPeriod
                 });
+                
+                // Add green pulse animation feedback
+                const playerToHighlight = { team: action.team, number: this.selectedPlayer.number };
+                this.recentlySwappedPlayers.push(playerToHighlight);
+
+                setTimeout(() => {
+                    this.recentlySwappedPlayers = this.recentlySwappedPlayers.filter(
+                        p => !(p.team === playerToHighlight.team && p.number === playerToHighlight.number)
+                    );
+                }, SWAP_ANIMATION_DURATION_MS);
                 
                 // Check if player now has 5 fouls and disqualify them
                 if (playerFouls + 1 >= DISQUALIFICATION_FOULS) {
@@ -1387,6 +1437,16 @@ createApp({
                     period: this.currentPeriod,
                     points: action.made ? POINT_VALUES.FREE_THROW : 0
                 });
+                
+                // Add green pulse animation feedback
+                const playerToHighlight = { team: this.selectedPlayer.team, number: this.selectedPlayer.number };
+                this.recentlySwappedPlayers.push(playerToHighlight);
+
+                setTimeout(() => {
+                    this.recentlySwappedPlayers = this.recentlySwappedPlayers.filter(
+                        p => !(p.team === playerToHighlight.team && p.number === playerToHighlight.number)
+                    );
+                }, SWAP_ANIMATION_DURATION_MS);
             }
             
             this.selectedPlayer = null;
