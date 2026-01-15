@@ -347,10 +347,12 @@ createApp({
          * Cached player statistics for performance optimization.
          * Recalculates only when gameLog changes.
          * Includes plus/minus calculation which tracks when players are on court.
-         * @returns {Object} Map of 'team-playerNumber' to {fouls, points, freeThrowsMade, freeThrowsTotal, plusMinus}
+         * Also caches quarter scores for fast lookup.
+         * @returns {Object} Contains playerStats and quarterScores for O(1) lookups
          */
         playerStatsCache() {
-            const stats = {};
+            const playerStats = {};
+            const quarterScores = { A: {}, B: {} };
             
             // Track which players are currently on court per team
             const onCourtStatus = { A: {}, B: {} };
@@ -370,8 +372,8 @@ createApp({
                 // Initialize player stats if needed
                 if (entry.player) {
                     const key = `${entry.team}-${entry.player.number}`;
-                    if (!stats[key]) {
-                        stats[key] = { 
+                    if (!playerStats[key]) {
+                        playerStats[key] = { 
                             fouls: 0, 
                             points: 0, 
                             freeThrowsMade: 0, 
@@ -382,20 +384,20 @@ createApp({
                     
                     // Track fouls
                     if (entry.action === ACTION_TYPES.FOUL) {
-                        stats[key].fouls++;
+                        playerStats[key].fouls++;
                     }
                     
                     // Track points
                     if (entry.points > 0) {
-                        stats[key].points += entry.points;
+                        playerStats[key].points += entry.points;
                     }
                     
                     // Track free throws
                     if (entry.action === ACTION_TYPES.FREE_THROW_MADE) {
-                        stats[key].freeThrowsMade++;
-                        stats[key].freeThrowsTotal++;
+                        playerStats[key].freeThrowsMade++;
+                        playerStats[key].freeThrowsTotal++;
                     } else if (entry.action === ACTION_TYPES.FREE_THROW_MISSED) {
-                        stats[key].freeThrowsTotal++;
+                        playerStats[key].freeThrowsTotal++;
                     }
                     
                     // Track substitutions for plus/minus
@@ -406,14 +408,23 @@ createApp({
                     }
                 }
                 
+                // Track quarter scores
+                if (entry.points > 0) {
+                    const period = entry.period;
+                    if (!quarterScores[entry.team][period]) {
+                        quarterScores[entry.team][period] = 0;
+                    }
+                    quarterScores[entry.team][period] += entry.points;
+                }
+                
                 // Update plus/minus for all players currently on court
                 if (entry.points > 0) {
                     ['A', 'B'].forEach(team => {
                         Object.keys(onCourtStatus[team]).forEach(playerNum => {
                             if (onCourtStatus[team][playerNum]) {
                                 const key = `${team}-${playerNum}`;
-                                if (!stats[key]) {
-                                    stats[key] = { 
+                                if (!playerStats[key]) {
+                                    playerStats[key] = { 
                                         fouls: 0, 
                                         points: 0, 
                                         freeThrowsMade: 0, 
@@ -424,9 +435,9 @@ createApp({
                                 
                                 // Add points if same team, subtract if opponent
                                 if (team === entry.team) {
-                                    stats[key].plusMinus += entry.points;
+                                    playerStats[key].plusMinus += entry.points;
                                 } else {
-                                    stats[key].plusMinus -= entry.points;
+                                    playerStats[key].plusMinus -= entry.points;
                                 }
                             }
                         });
@@ -434,7 +445,7 @@ createApp({
                 }
             });
             
-            return stats;
+            return { playerStats, quarterScores };
         }
     },
 
@@ -1550,19 +1561,19 @@ createApp({
         getPlayerPoints(team, playerNumber) {
             // Use cached stats for O(1) lookup instead of O(n) filter
             const key = `${team}-${playerNumber}`;
-            return this.playerStatsCache[key]?.points || 0;
+            return this.playerStatsCache.playerStats[key]?.points || 0;
         },
 
         getPlayerFouls(team, playerNumber) {
             // Use cached stats for O(1) lookup instead of O(n) filter
             const key = `${team}-${playerNumber}`;
-            return this.playerStatsCache[key]?.fouls || 0;
+            return this.playerStatsCache.playerStats[key]?.fouls || 0;
         },
 
         getPlayerFreeThrows(team, playerNumber) {
             // Use cached stats for O(1) lookup instead of O(n) filter
             const key = `${team}-${playerNumber}`;
-            const stats = this.playerStatsCache[key];
+            const stats = this.playerStatsCache.playerStats[key];
             
             if (!stats) {
                 return { made: 0, total: 0 };
@@ -1582,7 +1593,7 @@ createApp({
         didPlayerPlay(team, playerNumber) {
             // Use cached stats - if player has any stats, they played
             const key = `${team}-${playerNumber}`;
-            return this.playerStatsCache[key] !== undefined;
+            return this.playerStatsCache.playerStats[key] !== undefined;
         },
 
         getPlayerStatus(team, player) {
@@ -1600,11 +1611,8 @@ createApp({
         },
 
         getQuarterScore(team, quarter) {
-            return this.gameLog
-                .filter(entry => entry.team === team && 
-                               entry.period === quarter && 
-                               entry.points > 0)
-                .reduce((sum, entry) => sum + entry.points, 0);
+            // Use cached quarter scores for O(1) lookup instead of O(n) filter
+            return this.playerStatsCache.quarterScores[team]?.[quarter] || 0;
         },
 
         getScoreAtLogIndex(logIndex) {
@@ -1801,7 +1809,7 @@ createApp({
         getPlayerPlusMinus(team, playerNumber) {
             // Use cached plus/minus for O(1) lookup instead of O(n) iteration
             const key = `${team}-${playerNumber}`;
-            const plusMinus = this.playerStatsCache[key]?.plusMinus || 0;
+            const plusMinus = this.playerStatsCache.playerStats[key]?.plusMinus || 0;
             return plusMinus > 0 ? `+${plusMinus}` : plusMinus.toString();
         },
 
