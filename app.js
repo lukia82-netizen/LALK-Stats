@@ -346,31 +346,94 @@ createApp({
         /**
          * Cached player statistics for performance optimization.
          * Recalculates only when gameLog changes.
-         * @returns {Object} Map of 'team-playerNumber' to {fouls, points, freeThrowsMade, freeThrowsTotal}
+         * Includes plus/minus calculation which tracks when players are on court.
+         * @returns {Object} Map of 'team-playerNumber' to {fouls, points, freeThrowsMade, freeThrowsTotal, plusMinus}
          */
         playerStatsCache() {
             const stats = {};
+            
+            // Track which players are currently on court per team
+            const onCourtStatus = { A: {}, B: {} };
+            
+            // Initialize on-court status from starting lineup
+            ['A', 'B'].forEach(team => {
+                const teamData = this.getTeam(team);
+                teamData.players.forEach(player => {
+                    if (player.wasStarter) {
+                        onCourtStatus[team][player.number] = true;
+                    }
+                });
+            });
+            
+            // Process game log entries
             this.gameLog.forEach(entry => {
+                // Initialize player stats if needed
                 if (entry.player) {
                     const key = `${entry.team}-${entry.player.number}`;
                     if (!stats[key]) {
-                        stats[key] = { fouls: 0, points: 0, freeThrowsMade: 0, freeThrowsTotal: 0 };
+                        stats[key] = { 
+                            fouls: 0, 
+                            points: 0, 
+                            freeThrowsMade: 0, 
+                            freeThrowsTotal: 0,
+                            plusMinus: 0 
+                        };
                     }
                     
+                    // Track fouls
                     if (entry.action === ACTION_TYPES.FOUL) {
                         stats[key].fouls++;
                     }
+                    
+                    // Track points
                     if (entry.points > 0) {
                         stats[key].points += entry.points;
                     }
+                    
+                    // Track free throws
                     if (entry.action === ACTION_TYPES.FREE_THROW_MADE) {
                         stats[key].freeThrowsMade++;
                         stats[key].freeThrowsTotal++;
                     } else if (entry.action === ACTION_TYPES.FREE_THROW_MISSED) {
                         stats[key].freeThrowsTotal++;
                     }
+                    
+                    // Track substitutions for plus/minus
+                    if (entry.action === ACTION_TYPES.SUBSTITUTION) {
+                        // Toggle on-court status for this player
+                        const playerNum = entry.player.number;
+                        onCourtStatus[entry.team][playerNum] = !onCourtStatus[entry.team][playerNum];
+                    }
+                }
+                
+                // Update plus/minus for all players currently on court
+                if (entry.points > 0) {
+                    ['A', 'B'].forEach(team => {
+                        Object.keys(onCourtStatus[team]).forEach(playerNum => {
+                            if (onCourtStatus[team][playerNum]) {
+                                const key = `${team}-${playerNum}`;
+                                if (!stats[key]) {
+                                    stats[key] = { 
+                                        fouls: 0, 
+                                        points: 0, 
+                                        freeThrowsMade: 0, 
+                                        freeThrowsTotal: 0,
+                                        plusMinus: 0 
+                                    };
+                                }
+                                
+                                // Add points if same team, subtract if opponent
+                                if (team === entry.team) {
+                                    stats[key].plusMinus += entry.points;
+                                } else {
+                                    stats[key].plusMinus -= entry.points;
+                                }
+                            }
+                        });
+                    });
                 }
             });
+            
             return stats;
         }
     },
@@ -1485,36 +1548,30 @@ createApp({
         },
 
         getPlayerPoints(team, playerNumber) {
-            return this.gameLog
-                .filter(entry => entry.team === team && 
-                               entry.player && 
-                               entry.player.number === playerNumber &&
-                               entry.points > 0)
-                .reduce((sum, entry) => sum + entry.points, 0);
+            // Use cached stats for O(1) lookup instead of O(n) filter
+            const key = `${team}-${playerNumber}`;
+            return this.playerStatsCache[key]?.points || 0;
         },
 
         getPlayerFouls(team, playerNumber) {
-            return this.gameLog
-                .filter(entry => entry.team === team && 
-                               entry.player && 
-                               entry.player.number === playerNumber &&
-                               entry.action === ACTION_TYPES.FOUL)
-                .length;
+            // Use cached stats for O(1) lookup instead of O(n) filter
+            const key = `${team}-${playerNumber}`;
+            return this.playerStatsCache[key]?.fouls || 0;
         },
 
         getPlayerFreeThrows(team, playerNumber) {
-            const entries = this.gameLog.filter(entry => 
-                entry.team === team && 
-                entry.player && 
-                entry.player.number === playerNumber &&
-                (entry.action === ACTION_TYPES.FREE_THROW_MADE || 
-                 entry.action === ACTION_TYPES.FREE_THROW_MISSED)
-            );
+            // Use cached stats for O(1) lookup instead of O(n) filter
+            const key = `${team}-${playerNumber}`;
+            const stats = this.playerStatsCache[key];
             
-            const made = entries.filter(e => e.action === ACTION_TYPES.FREE_THROW_MADE).length;
-            const total = entries.length;
+            if (!stats) {
+                return { made: 0, total: 0 };
+            }
             
-            return { made, total };
+            return { 
+                made: stats.freeThrowsMade || 0, 
+                total: stats.freeThrowsTotal || 0 
+            };
         },
 
         calculatePlayerFTPercentage(team, playerNumber) {
@@ -1523,12 +1580,9 @@ createApp({
         },
 
         didPlayerPlay(team, playerNumber) {
-            // Check if player has any actions in game log
-            return this.gameLog.some(entry => 
-                entry.team === team && 
-                entry.player && 
-                entry.player.number === playerNumber
-            );
+            // Use cached stats - if player has any stats, they played
+            const key = `${team}-${playerNumber}`;
+            return this.playerStatsCache[key] !== undefined;
         },
 
         getPlayerStatus(team, player) {
@@ -1745,33 +1799,9 @@ createApp({
         // PERFORMANCE STATS
         // ============================================
         getPlayerPlusMinus(team, playerNumber) {
-            // Calculate +/- when player is on court
-            let plusMinus = 0;
-            let onCourt = false;
-            
-            // Check if player started
-            const teamData = this.getTeam(team);
-            const player = teamData.players.find(p => p.number === playerNumber);
-            if (player && player.wasStarter) {
-                onCourt = true;
-            }
-            
-            this.gameLog.forEach(entry => {
-                // Check for substitutions involving this player
-                if (entry.action === ACTION_TYPES.SUBSTITUTION && entry.player && entry.player.number === playerNumber && entry.team === team) {
-                    onCourt = !onCourt; // Toggle on/off court
-                }
-                
-                // Count points while on court
-                if (onCourt && entry.points > 0) {
-                    if (entry.team === team) {
-                        plusMinus += entry.points; // Team scored
-                    } else {
-                        plusMinus -= entry.points; // Opponent scored
-                    }
-                }
-            });
-            
+            // Use cached plus/minus for O(1) lookup instead of O(n) iteration
+            const key = `${team}-${playerNumber}`;
+            const plusMinus = this.playerStatsCache[key]?.plusMinus || 0;
             return plusMinus > 0 ? `+${plusMinus}` : plusMinus.toString();
         },
 
