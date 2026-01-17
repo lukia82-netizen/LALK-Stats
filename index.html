@@ -238,7 +238,16 @@
                                      @dragover="onDragOver"
                                      @dragenter.prevent
                                      @dragleave.prevent">
-                                    <div class="player-section-title">🏀 ON COURT (Drag & Drop)</div>
+                                    <div class="player-section-title">
+                                        🏀 ON COURT (Drag & Drop)
+                                        <button v-if="team.players.filter(p => p.onCourt).length > 0"
+                                                @click.stop="moveAllPlayersToReserves(teamId)"
+                                                class="timeout-btn"
+                                                style="font-size: 0.75em; padding: 4px 8px; margin-left: 10px;"
+                                                title="Move all players to reserves (stops clock)">
+                                            ⏸️ All to Reserves
+                                        </button>
+                                    </div>
                                     <div class="player-buttons">
                                         <button v-for="(player, index) in team.players.filter(p => p.onCourt)" 
                                                 :key="'court-' + teamId.toLowerCase() + '-' + index"

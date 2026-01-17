@@ -279,6 +279,9 @@ createApp({
             // === RECENTLY SWAPPED PLAYERS ===
             recentlySwappedPlayers: [], // [{team, number}]
 
+            // === PLAYERS ON COURT BEFORE "ALL TO RESERVES" ===
+            playersOnCourtBeforeTimeout: { A: [], B: [] }, // Stores player numbers that were on court before timeout
+
             // === PRINT MODE STATE ===
             printMode: 'none', // 'none', 'minimal', 'full'
 
@@ -535,10 +538,35 @@ createApp({
             selectedPlayerObj.onCourt = !selectedPlayerObj.onCourt;
             clickedPlayer.onCourt = !clickedPlayer.onCourt;
             
-            // Log substitution using helper
+            // Determine which player is coming in and which is going out
             const outPlayer = wasFirstOnCourt ? selectedPlayerObj : clickedPlayer;
             const inPlayer = wasFirstOnCourt ? clickedPlayer : selectedPlayerObj;
-            this.logSubstitution(team, inPlayer, outPlayer);
+            
+            // Check if players were on court before timeout
+            const inPlayerWasOnCourtBeforeTimeout = this.playersOnCourtBeforeTimeout[team].includes(inPlayer.number);
+            const outPlayerWasOnCourtBeforeTimeout = this.playersOnCourtBeforeTimeout[team].includes(outPlayer.number);
+            
+            // Determine if we should log this substitution
+            if (this.playersOnCourtBeforeTimeout[team].length > 0) {
+                // We're still in "timeout mode" - only log if it's a real change
+                if (!inPlayerWasOnCourtBeforeTimeout || !outPlayerWasOnCourtBeforeTimeout) {
+                    // At least one player is different from before timeout
+                    this.logSubstitution(team, inPlayer, outPlayer);
+                }
+                
+                // Update timeout memory: remove both if they were there, or keep as is
+                this.playersOnCourtBeforeTimeout[team] = this.playersOnCourtBeforeTimeout[team].filter(
+                    num => num !== inPlayer.number && num !== outPlayer.number
+                );
+            } else {
+                // Normal substitution logging when not in timeout mode
+                this.logSubstitution(team, inPlayer, outPlayer);
+            }
+            
+            // If timeout memory is empty, clear it completely
+            if (this.playersOnCourtBeforeTimeout[team].length === 0) {
+                this.playersOnCourtBeforeTimeout[team] = [];
+            }
             
             // Highlight both players that were swapped
             this.recentlySwappedPlayers = [
@@ -611,14 +639,42 @@ createApp({
                 if (!this.draggedPlayer.onCourt && courtPlayers.length < 5) {
                     this.draggedPlayer.onCourt = true;
                     
-                    // Log substitution IN
-                    this.logAction({
-                        team,
-                        teamName: teamData.name,
-                        action: `${ACTION_TYPES.SUBSTITUTION}: IN #${this.draggedPlayer.number} ${this.draggedPlayer.name}`,
-                        player: { number: this.draggedPlayer.number, name: this.draggedPlayer.name },
-                        period: this.currentPeriod
-                    });
+                    // Check if player was on court before timeout
+                    const wasOnCourtBeforeTimeout = this.playersOnCourtBeforeTimeout[team].includes(this.draggedPlayer.number);
+                    
+                    if (!wasOnCourtBeforeTimeout && this.playersOnCourtBeforeTimeout[team].length > 0) {
+                        // Find a player who was on court before but hasn't returned yet
+                        const currentCourtNumbers = teamData.getCourtPlayers().map(p => p.number);
+                        currentCourtNumbers.push(this.draggedPlayer.number); // Include player being added
+                        const playerWhoLeft = this.playersOnCourtBeforeTimeout[team].find(
+                            num => !currentCourtNumbers.includes(num)
+                        );
+                        
+                        if (playerWhoLeft) {
+                            // Find the player object who left
+                            const outPlayerObj = teamData.players.find(p => p.number === playerWhoLeft);
+                            const outPlayer = outPlayerObj ? { number: outPlayerObj.number, name: outPlayerObj.name } : null;
+                            const inPlayer = { number: this.draggedPlayer.number, name: this.draggedPlayer.name };
+                            
+                            // Log substitution with both IN and OUT
+                            this.logSubstitution(team, inPlayer, outPlayer);
+                            
+                            // Remove the player who left from timeout memory
+                            this.playersOnCourtBeforeTimeout[team] = this.playersOnCourtBeforeTimeout[team].filter(
+                                num => num !== playerWhoLeft
+                            );
+                        }
+                    } else if (wasOnCourtBeforeTimeout) {
+                        // Player was on court before timeout, just remove from memory list
+                        this.playersOnCourtBeforeTimeout[team] = this.playersOnCourtBeforeTimeout[team].filter(
+                            num => num !== this.draggedPlayer.number
+                        );
+                    }
+                    
+                    // If timeout memory is empty, clear it completely
+                    if (this.playersOnCourtBeforeTimeout[team].length === 0) {
+                        this.playersOnCourtBeforeTimeout[team] = [];
+                    }
                     
                     this.saveToLocalStorage();
                 }
@@ -654,6 +710,40 @@ createApp({
             this.draggedPlayer = null;
             this.draggedTeam = null;
             this.draggedIndex = null;
+        },
+
+        /**
+         * Moves all players from court to reserves (bench).
+         * Typically called during timeouts. Stops the game clock if running.
+         * Does not log individual substitutions - waits until 5 players are added back.
+         * @param {string} team - The team whose players to move to reserves ('A' or 'B')
+         */
+        moveAllPlayersToReserves(team) {
+            const teamData = this.getTeam(team);
+            const courtPlayers = teamData.getCourtPlayers();
+            
+            if (courtPlayers.length === 0) {
+                return;
+            }
+            
+            // Stop the clock if running
+            if (this.gameClockRunning) {
+                this.pauseGameClock();
+            }
+            
+            // Remember who was on court before moving them (to avoid logging unnecessary substitutions later)
+            this.playersOnCourtBeforeTimeout[team] = courtPlayers.map(p => p.number);
+            
+            // Move all court players to reserves without logging individual substitutions
+            courtPlayers.forEach(player => {
+                player.onCourt = false;
+            });
+            
+            // Clear any pending selection
+            this.selectedPlayer = null;
+            
+            // Save state
+            this.saveToLocalStorage();
         },
 
         onPlayerDragEnter(team, targetIndex, event) {
@@ -712,13 +802,41 @@ createApp({
                     );
                 }, SWAP_ANIMATION_DURATION_MS);
                 
+                // Check if players were on court before timeout to determine if we should log substitution
+                const draggedWasOnCourtBeforeTimeout = this.playersOnCourtBeforeTimeout[team].includes(draggedPlayer.number);
+                const targetWasOnCourtBeforeTimeout = this.playersOnCourtBeforeTimeout[team].includes(targetPlayer.number);
+                
                 // Log substitutions to game log
-                if (draggedWasOnCourt && !targetWasOnCourt) {
-                    // Dragged player went to bench, target came to court
-                    this.logSubstitution(team, targetPlayer, draggedPlayer);
-                } else if (!draggedWasOnCourt && targetWasOnCourt) {
-                    // Dragged player came to court, target went to bench
-                    this.logSubstitution(team, draggedPlayer, targetPlayer);
+                if (this.playersOnCourtBeforeTimeout[team].length > 0) {
+                    // We're in timeout mode - only log if there's a real change
+                    if (draggedWasOnCourt && !targetWasOnCourt) {
+                        // Dragged went to bench, target came to court
+                        if (!targetWasOnCourtBeforeTimeout || !draggedWasOnCourtBeforeTimeout) {
+                            this.logSubstitution(team, targetPlayer, draggedPlayer);
+                        }
+                    } else if (!draggedWasOnCourt && targetWasOnCourt) {
+                        // Dragged came to court, target went to bench
+                        if (!draggedWasOnCourtBeforeTimeout || !targetWasOnCourtBeforeTimeout) {
+                            this.logSubstitution(team, draggedPlayer, targetPlayer);
+                        }
+                    }
+                    
+                    // Update timeout memory: remove both players if they were there
+                    this.playersOnCourtBeforeTimeout[team] = this.playersOnCourtBeforeTimeout[team].filter(
+                        num => num !== draggedPlayer.number && num !== targetPlayer.number
+                    );
+                } else {
+                    // Normal mode - log all substitutions
+                    if (draggedWasOnCourt && !targetWasOnCourt) {
+                        this.logSubstitution(team, targetPlayer, draggedPlayer);
+                    } else if (!draggedWasOnCourt && targetWasOnCourt) {
+                        this.logSubstitution(team, draggedPlayer, targetPlayer);
+                    }
+                }
+                
+                // If timeout memory is empty, clear it completely
+                if (this.playersOnCourtBeforeTimeout[team].length === 0) {
+                    this.playersOnCourtBeforeTimeout[team] = [];
                 }
                 
                 this.saveToLocalStorage();
