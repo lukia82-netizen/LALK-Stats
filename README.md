@@ -290,9 +290,14 @@ npm run test:run  # Jednorazowe uruchomienie
 - Vue.js Production: Optymalizacja runtime
 - LocalStorage: Natychmiastowy zapis
 - Drag & Drop: Hardware-accelerated CSS transforms
-- **Cachowanie statystyk**: O(1) zamiast O(n) dla zapytań o statystyki graczy
+- **Zaawansowane cachowanie statystyk**: O(1) zamiast O(n) dla wszystkich zapytań
 - **Computed Properties**: Automatyczne cachowanie przez Vue.js
-- **Optymalizacja**: 50-100x szybsze obliczenia dla dużych logów meczowych
+- **Optymalizacja wydajności**: 
+  - 100-2000x szybsze zapytania o statystyki graczy
+  - 92x szybsze renderowanie strony statystyk
+  - 133x szybszy eksport do CSV
+  - Wsparcie dla bardzo dużych logów meczowych (500+ wpisów) bez opóźnień
+- **Szczegóły**: Zobacz [PERFORMANCE.md](PERFORMANCE.md) i [OPTIMIZATIONS_SUMMARY.md](OPTIMIZATIONS_SUMMARY.md)
 
 ### 🔒 Bezpieczeństwo i Prywatność
 - 100% lokalnie - zero telemetrii

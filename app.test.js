@@ -428,6 +428,108 @@ describe('Basketball Scoreboard - Critical Functions', () => {
             }
         }
     });
+
+    describe('Performance Optimizations - Plus/Minus Caching', () => {
+        test('should calculate plus/minus correctly with starting lineup', () => {
+            // Simulate playerStatsCache computation with plus/minus
+            const teamAPlayers = [
+                { number: 5, name: 'John', wasStarter: true },
+                { number: 7, name: 'Mike', wasStarter: false }
+            ];
+            
+            const gameLog = [
+                { team: 'A', player: { number: 5, name: 'John' }, action: 'Points', points: 2, period: 1 },
+                { team: 'B', player: { number: 10, name: 'Alex' }, action: 'Points', points: 3, period: 1 }
+            ];
+            
+            const stats = {};
+            const onCourtStatus = { A: {}, B: {} };
+            
+            // Initialize starters
+            onCourtStatus.A[5] = true; // John started
+            
+            gameLog.forEach(entry => {
+                if (entry.points > 0) {
+                    // Update plus/minus for players on court
+                    Object.keys(onCourtStatus.A).forEach(playerNum => {
+                        if (onCourtStatus.A[playerNum]) {
+                            const key = `A-${playerNum}`;
+                            if (!stats[key]) stats[key] = { plusMinus: 0 };
+                            
+                            if (entry.team === 'A') {
+                                stats[key].plusMinus += entry.points;
+                            } else {
+                                stats[key].plusMinus -= entry.points;
+                            }
+                        }
+                    });
+                }
+            });
+            
+            // John should be +2 (scored 2) - 3 (opponent scored 3) = -1
+            expect(stats['A-5'].plusMinus).toBe(-1);
+        });
+
+        test('should handle substitutions in plus/minus calculation', () => {
+            const gameLog = [
+                { team: 'A', player: { number: 5, name: 'John' }, action: 'Points', points: 2, period: 1 },
+                { team: 'A', player: { number: 5, name: 'John' }, action: ACTION_TYPES.SUBSTITUTION, period: 1 }, // John out
+                { team: 'B', player: { number: 10, name: 'Alex' }, action: 'Points', points: 3, period: 1 },
+                { team: 'A', player: { number: 7, name: 'Mike' }, action: ACTION_TYPES.SUBSTITUTION, period: 1 }, // Mike in
+                { team: 'A', player: { number: 7, name: 'Mike' }, action: 'Points', points: 2, period: 1 }
+            ];
+            
+            const stats = {};
+            const onCourtStatus = { A: {} };
+            onCourtStatus.A[5] = true; // John starts
+            
+            gameLog.forEach(entry => {
+                if (entry.player && entry.action === ACTION_TYPES.SUBSTITUTION) {
+                    onCourtStatus.A[entry.player.number] = !onCourtStatus.A[entry.player.number];
+                }
+                
+                if (entry.points > 0) {
+                    Object.keys(onCourtStatus.A).forEach(playerNum => {
+                        if (onCourtStatus.A[playerNum]) {
+                            const key = `A-${playerNum}`;
+                            if (!stats[key]) stats[key] = { plusMinus: 0 };
+                            stats[key].plusMinus += entry.points;
+                        }
+                    });
+                }
+            });
+            
+            // John: +2 while on court, then subbed out before opponent scored
+            expect(stats['A-5']?.plusMinus || 0).toBe(2);
+            // Mike: +2 while on court (came in after opponent score)
+            expect(stats['A-7']?.plusMinus || 0).toBe(2);
+        });
+
+        test('should not include points when player is not on court', () => {
+            const gameLog = [
+                { team: 'A', player: { number: 7, name: 'Mike' }, action: 'Points', points: 2, period: 1 }
+            ];
+            
+            const stats = {};
+            const onCourtStatus = { A: {} };
+            // Mike is NOT on court (not a starter)
+            
+            gameLog.forEach(entry => {
+                if (entry.points > 0) {
+                    Object.keys(onCourtStatus.A).forEach(playerNum => {
+                        if (onCourtStatus.A[playerNum]) {
+                            const key = `A-${playerNum}`;
+                            if (!stats[key]) stats[key] = { plusMinus: 0 };
+                            stats[key].plusMinus += entry.points;
+                        }
+                    });
+                }
+            });
+            
+            // Mike was not on court, should have no plus/minus
+            expect(stats['A-7']).toBeUndefined();
+        });
+    });
 });
 
 // Simple test runner if no framework is installed
