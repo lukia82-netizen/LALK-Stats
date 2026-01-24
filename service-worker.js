@@ -3,7 +3,7 @@
    PWA Offline Support
    ============================================ */
 
-const CACHE_NAME = 'lalk-stats-v2.5.0';
+const CACHE_NAME = 'lalk-stats-v3.0.0';
 const urlsToCache = [
   '/index-refactored.html',
   '/app.js',

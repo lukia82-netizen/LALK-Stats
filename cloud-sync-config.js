@@ -3,28 +3,33 @@
    Multi-device synchronization settings
    ============================================ */
 
+// WARNING: DO NOT commit real API keys to version control!
+// Use environment variables or a secure config management system in production.
+
 const CloudSyncConfig = {
   // Feature toggle
   enabled: false, // Set to true to enable cloud sync
   
-  // Backend configuration (example - replace with actual backend)
+  // Backend configuration
+  // IMPORTANT: Replace placeholder values before enabling sync
   backend: {
     type: 'firebase', // Options: 'firebase', 'custom', 'none'
     
-    // Firebase configuration (replace with your project details)
+    // Firebase configuration
+    // Get these values from Firebase Console: Project Settings → Your Apps
     firebase: {
-      apiKey: 'YOUR_API_KEY_HERE',
-      authDomain: 'your-project.firebaseapp.com',
-      projectId: 'your-project-id',
-      storageBucket: 'your-project.appspot.com',
-      messagingSenderId: '123456789',
-      appId: 'your-app-id'
+      apiKey: 'YOUR_API_KEY_HERE',  // ⚠️ REPLACE THIS
+      authDomain: 'your-project.firebaseapp.com',  // ⚠️ REPLACE THIS
+      projectId: 'your-project-id',  // ⚠️ REPLACE THIS
+      storageBucket: 'your-project.appspot.com',  // ⚠️ REPLACE THIS
+      messagingSenderId: '123456789',  // ⚠️ REPLACE THIS
+      appId: 'your-app-id'  // ⚠️ REPLACE THIS
     },
     
     // Custom backend configuration
     custom: {
-      apiUrl: 'https://your-api.example.com',
-      wsUrl: 'wss://your-api.example.com/ws',
+      apiUrl: 'https://your-api.example.com',  // ⚠️ REPLACE THIS
+      wsUrl: 'wss://your-api.example.com/ws',  // ⚠️ REPLACE THIS
       authEndpoint: '/api/auth',
       syncEndpoint: '/api/sync',
       streamEndpoint: '/api/stream'

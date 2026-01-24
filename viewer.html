@@ -198,7 +198,7 @@
     <div id="viewer" class="viewer-container">
         <div class="viewer-header">
             <h1>🏀 Live Game Stats</h1>
-            <span class="live-badge" v-if="connected">● LIVE</span>
+            <span v-if="connected" class="live-badge" role="status" aria-label="Live streaming active">● LIVE</span>
         </div>
         
         <div v-if="loading" class="loading">
@@ -214,18 +214,18 @@
             <div class="scoreboard">
                 <div class="team-score">
                     <h2>{{ gameData.teamA.name }}</h2>
-                    <div class="score">{{ gameData.teamA.score }}</div>
-                    <div class="fouls">⚠️ {{ gameData.teamA.fouls }} Fouls</div>
+                    <div class="score" aria-label="Score">{{ gameData.teamA.score }}</div>
+                    <div class="fouls" aria-label="Team fouls">⚠️ {{ gameData.teamA.fouls }} Fouls</div>
                 </div>
                 
                 <div class="game-info">
-                    <div class="period">Q{{ gameData.currentPeriod }}</div>
+                    <div class="period" aria-label="Current quarter">Q{{ gameData.currentPeriod }}</div>
                 </div>
                 
                 <div class="team-score">
                     <h2>{{ gameData.teamB.name }}</h2>
-                    <div class="score">{{ gameData.teamB.score }}</div>
-                    <div class="fouls">⚠️ {{ gameData.teamB.fouls }} Fouls</div>
+                    <div class="score" aria-label="Score">{{ gameData.teamB.score }}</div>
+                    <div class="fouls" aria-label="Team fouls">⚠️ {{ gameData.teamB.fouls }} Fouls</div>
                 </div>
             </div>
             
@@ -328,6 +328,9 @@
                 this.loadGameData();
                 
                 // Auto-refresh every second
+                // NOTE: For production with WebSocket, replace polling with real-time events
+                // Current 1s interval may cause performance issues with many viewers
+                // Consider increasing to 2-3s or implementing WebSocket for production
                 this.updateInterval = setInterval(() => {
                     this.loadGameData();
                 }, 1000);

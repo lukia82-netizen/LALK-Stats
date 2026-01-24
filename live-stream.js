@@ -126,10 +126,12 @@ class LiveStreamManager {
 
   /**
    * Generate unique share code
-   * @returns {string} Share code
+   * Excludes visually confusing characters: 0, O, 1, I, L, S, 5
+   * to prevent misreading when sharing codes verbally or visually
+   * @returns {string} Share code (6 characters)
    */
   generateShareCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding confusing chars
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding confusing chars: 0,O,1,I,L,S,5
     let code = '';
     for (let i = 0; i < 6; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -196,6 +198,10 @@ class LiveStreamManager {
 
   /**
    * Store stream data for polling
+   * NOTE: This is a proof-of-concept implementation using LocalStorage.
+   * For production use with remote viewers, implement a WebSocket server
+   * or use Firebase Realtime Database. Current implementation only works
+   * for same-device/browser sharing.
    * @param {Object} data - Game data
    */
   storeStreamData(data) {

@@ -45,12 +45,16 @@ class CloudSyncManager {
   async initializeFirebase() {
     // Check if Firebase SDK is loaded
     if (typeof firebase === 'undefined') {
-      throw new Error('Firebase SDK not loaded. Please include Firebase scripts.');
+      console.warn('[CloudSync] Firebase SDK not loaded. Please include Firebase scripts in HTML.');
+      console.warn('[CloudSync] Add these scripts before app.js:');
+      console.warn('  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>');
+      console.warn('  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database-compat.js"></script>');
+      throw new Error('Firebase SDK not loaded. See console for instructions.');
     }
     
-    // Initialize Firebase (example - requires Firebase SDK)
-    // firebase.initializeApp(this.config.backend.firebase);
-    console.log('[CloudSync] Firebase configuration ready (SDK not loaded in this version)');
+    // Initialize Firebase
+    firebase.initializeApp(this.config.backend.firebase);
+    console.log('[CloudSync] Firebase initialized successfully');
   }
 
   async initializeCustomBackend() {
