@@ -1,0 +1,34 @@
+<!-- Simple SVG icon for PWA - Basketball theme -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f7931e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#grad1)"/>
+  
+  <!-- Basketball lines -->
+  <g stroke="#ffffff" stroke-width="8" fill="none" opacity="0.9">
+    <!-- Vertical center line -->
+    <line x1="256" y1="50" x2="256" y2="462" />
+    <!-- Horizontal center line -->
+    <line x1="50" y1="256" x2="462" y2="256" />
+    
+    <!-- Curved lines -->
+    <path d="M 256 50 Q 350 150 256 256 Q 162 362 256 462" />
+    <path d="M 256 50 Q 162 150 256 256 Q 350 362 256 462" />
+    <path d="M 50 256 Q 150 162 256 256 Q 362 350 462 256" />
+    <path d="M 50 256 Q 150 350 256 256 Q 362 162 462 256" />
+  </g>
+  
+  <!-- Score display in center -->
+  <rect x="176" y="206" width="160" height="100" rx="10" fill="#ffffff" opacity="0.95"/>
+  <text x="256" y="246" font-family="Arial, sans-serif" font-size="32" font-weight="bold" 
+        text-anchor="middle" fill="#ff6b35">00</text>
+  <text x="246" y="286" font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
+        text-anchor="middle" fill="#666">:</text>
+  <text x="266" y="286" font-family="Arial, sans-serif" font-size="32" font-weight="bold" 
+        text-anchor="middle" fill="#f7931e">00</text>
+</svg>

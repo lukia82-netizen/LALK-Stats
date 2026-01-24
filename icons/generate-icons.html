@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+</head>
+<body>
+    <h1>PWA Icon Generator</h1>
+    <p>Open browser console to see generated icons</p>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div id="downloads"></div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const downloadsDiv = document.getElementById('downloads');
+
+        function generateIcon(size) {
+            canvas.width = size;
+            canvas.height = size;
+
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#ff6b35');
+            gradient.addColorStop(1, '#f7931e');
+            
+            // Draw background circle
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw basketball lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.lineWidth = size * 0.015;
+
+            // Vertical line
+            ctx.beginPath();
+            ctx.moveTo(size/2, size * 0.1);
+            ctx.lineTo(size/2, size * 0.9);
+            ctx.stroke();
+
+            // Horizontal line
+            ctx.beginPath();
+            ctx.moveTo(size * 0.1, size/2);
+            ctx.lineTo(size * 0.9, size/2);
+            ctx.stroke();
+
+            // Curved lines
+            ctx.beginPath();
+            ctx.moveTo(size/2, size * 0.1);
+            ctx.quadraticCurveTo(size * 0.7, size * 0.3, size/2, size/2);
+            ctx.quadraticCurveTo(size * 0.3, size * 0.7, size/2, size * 0.9);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(size/2, size * 0.1);
+            ctx.quadraticCurveTo(size * 0.3, size * 0.3, size/2, size/2);
+            ctx.quadraticCurveTo(size * 0.7, size * 0.7, size/2, size * 0.9);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(size * 0.1, size/2);
+            ctx.quadraticCurveTo(size * 0.3, size * 0.3, size/2, size/2);
+            ctx.quadraticCurveTo(size * 0.7, size * 0.7, size * 0.9, size/2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(size * 0.1, size/2);
+            ctx.quadraticCurveTo(size * 0.3, size * 0.7, size/2, size/2);
+            ctx.quadraticCurveTo(size * 0.7, size * 0.3, size * 0.9, size/2);
+            ctx.stroke();
+
+            // Draw score box
+            const boxWidth = size * 0.3;
+            const boxHeight = size * 0.2;
+            const boxX = (size - boxWidth) / 2;
+            const boxY = (size - boxHeight) / 2;
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.beginPath();
+            ctx.roundRect(boxX, boxY, boxWidth, boxHeight, size * 0.02);
+            ctx.fill();
+
+            // Draw numbers
+            ctx.fillStyle = '#ff6b35';
+            ctx.font = `bold ${size * 0.08}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🏀', size/2, size/2);
+
+            return canvas.toDataURL('image/png');
+        }
+
+        // Generate all sizes
+        sizes.forEach(size => {
+            const dataUrl = generateIcon(size);
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `icon-${size}x${size}.png`;
+            link.textContent = `Download ${size}x${size} icon`;
+            link.style.display = 'block';
+            link.style.margin = '10px';
+            downloadsDiv.appendChild(link);
+            
+            console.log(`Generated ${size}x${size} icon`);
+        });
+
+        console.log('All icons generated! Click links to download.');
+    </script>
+</body>
+</html>

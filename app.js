@@ -289,7 +289,30 @@ createApp({
             possessionArrow: null, // null, 'A', or 'B'
 
             // === UNSAVED CHANGES ===
-            hasUnsavedChanges: false
+            hasUnsavedChanges: false,
+
+            // === PWA FEATURES ===
+            showInstallButton: false,
+            deferredPrompt: null,
+
+            // === CLOUD SYNC ===
+            cloudSync: {
+                enabled: false,
+                syncing: false,
+                lastSync: null,
+                error: null
+            },
+
+            // === LIVE STREAM ===
+            liveStream: {
+                active: false,
+                code: null,
+                shareUrl: null,
+                viewers: 0,
+                expiry: null,
+                showModal: false,
+                copied: false
+            }
         };
     },
 
@@ -2060,10 +2083,116 @@ createApp({
             
             // Cancel selection
             else if (key === 'ESCAPE') this.cancelSelection();
+        },
+
+        // === PWA INSTALL ===
+        async installPWA() {
+            if (!this.deferredPrompt && !window.deferredPrompt) {
+                alert('PWA installation is not available. Please use a supported browser or the app is already installed.');
+                return;
+            }
+
+            const prompt = this.deferredPrompt || window.deferredPrompt;
+            
+            // Show the install prompt
+            prompt.prompt();
+
+            // Wait for the user's response
+            const { outcome } = await prompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('User accepted the PWA install prompt');
+            } else {
+                console.log('User dismissed the PWA install prompt');
+            }
+
+            // Clear the prompt
+            this.deferredPrompt = null;
+            window.deferredPrompt = null;
+            this.showInstallButton = false;
+        },
+
+        // === CLOUD SYNC METHODS ===
+        async toggleCloudSync() {
+            if (!this.cloudSyncManager) {
+                alert('Cloud sync is not configured. Please check cloud-sync-config.js');
+                return;
+            }
+
+            this.cloudSync.enabled = !this.cloudSync.enabled;
+            this.cloudSyncManager.toggleSync(this.cloudSync.enabled);
+
+            if (this.cloudSync.enabled) {
+                // Trigger initial sync
+                await this.cloudSyncManager.syncToCloud();
+            }
+        },
+
+        // === LIVE STREAM METHODS ===
+        async toggleLiveStream() {
+            if (!this.liveStreamManager) {
+                alert('Live streaming is not available.');
+                return;
+            }
+
+            if (this.liveStream.active) {
+                // Show modal with share info
+                this.liveStream.showModal = true;
+            } else {
+                // Start streaming
+                try {
+                    const shareInfo = await this.liveStreamManager.startStreaming();
+                    const expiry = new Date(shareInfo.expiry);
+                    this.liveStream.expiry = expiry;
+                } catch (error) {
+                    console.error('Failed to start streaming:', error);
+                    alert('Failed to start live streaming. Please try again.');
+                }
+            }
+        },
+
+        async stopLiveStreamConfirm() {
+            if (confirm('Are you sure you want to stop live streaming?')) {
+                if (this.liveStreamManager) {
+                    this.liveStreamManager.stopStreaming();
+                    this.liveStream.active = false;
+                    this.liveStream.code = null;
+                    this.liveStream.shareUrl = null;
+                    this.liveStream.showModal = false;
+                }
+            }
+        },
+
+        async copyShareLink() {
+            if (!this.liveStreamManager || !this.liveStream.shareUrl) {
+                return;
+            }
+
+            try {
+                await this.liveStreamManager.copyShareUrl();
+                this.liveStream.copied = true;
+                
+                // Reset copied state after 2 seconds
+                setTimeout(() => {
+                    this.liveStream.copied = false;
+                }, 2000);
+            } catch (error) {
+                console.error('Failed to copy share link:', error);
+                alert('Failed to copy link. Please copy manually.');
+            }
+        },
+
+        formatExpiry(expiry) {
+            if (!expiry) return 'N/A';
+            const date = new Date(expiry);
+            return date.toLocaleString();
         }
     },
 
     mounted() {
+        // Store reference to Vue app for PWA install prompt
+        window.vueApp = this;
+        
         // Load saved game data
         this.loadFromLocalStorage();
         
@@ -2074,6 +2203,44 @@ createApp({
         window.addEventListener('beforeunload', () => {
             this.saveToLocalStorage();
         });
+        
+        // Initialize Cloud Sync
+        if (typeof CloudSyncConfig !== 'undefined' && typeof CloudSyncManager !== 'undefined') {
+            this.cloudSyncManager = new CloudSyncManager(CloudSyncConfig);
+            this.cloudSync.enabled = CloudSyncConfig.enabled;
+            
+            // Listen to sync status updates
+            this.cloudSyncManager.addListener((status) => {
+                this.cloudSync.syncing = status.status === 'syncing';
+                this.cloudSync.lastSync = status.lastSyncTime;
+                this.cloudSync.error = status.status === 'error' ? 'Sync failed' : null;
+            });
+        }
+        
+        // Initialize Live Stream Manager
+        if (typeof LiveStreamManager !== 'undefined') {
+            const config = typeof CloudSyncConfig !== 'undefined' ? CloudSyncConfig : { streaming: {} };
+            this.liveStreamManager = new LiveStreamManager(config);
+            
+            // Listen to streaming events
+            this.liveStreamManager.addListener((event) => {
+                if (event.event === 'stream_started') {
+                    this.liveStream.active = true;
+                    this.liveStream.code = event.shareCode;
+                    this.liveStream.shareUrl = event.shareUrl;
+                    this.liveStream.showModal = true;
+                } else if (event.event === 'stream_stopped') {
+                    this.liveStream.active = false;
+                    this.liveStream.showModal = false;
+                }
+            });
+        }
+        
+        // Check for deferred PWA install prompt
+        if (window.deferredPrompt) {
+            this.deferredPrompt = window.deferredPrompt;
+            this.showInstallButton = true;
+        }
     },
 
     beforeUnmount() {
@@ -2088,6 +2255,21 @@ createApp({
         // Clean up timeout interval
         if (this.timeoutInterval) {
             clearInterval(this.timeoutInterval);
+        }
+        
+        // Clean up cloud sync
+        if (this.cloudSyncManager) {
+            this.cloudSyncManager.destroy();
+        }
+        
+        // Clean up live stream
+        if (this.liveStreamManager) {
+            this.liveStreamManager.destroy();
+        }
+        
+        // Clean up Vue app reference
+        if (window.vueApp === this) {
+            window.vueApp = null;
         }
     }
 }).mount('#app');
