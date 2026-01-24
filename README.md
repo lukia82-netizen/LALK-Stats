@@ -320,19 +320,21 @@ npm run test:run  # Jednorazowe uruchomienie
 - ✅ ~~**System 5 fauli**~~ - Zaimplementowano (automatyczna dyskwalifikacja, gwizdek, undo support)
 - ✅ ~~**Wymiana jednym kliknięciem**~~ - Zaimplementowano (inteligentny wybór gracza)
 - ✅ ~~**Animacje wymian**~~ - Zaimplementowano (zielony puls, visual feedback)
+- ✅ ~~**PWA (Progressive Web App)**~~ - Zaimplementowano (instalacja jako aplikacja mobilna, offline support)
+- ✅ ~~**Multi-device sync**~~ - Zaimplementowano (opcjonalna synchronizacja przez cloud)
+- ✅ ~~**Live streaming stats**~~ - Zaimplementowano (udostępnianie statystyk na żywo)
 - 📊 **Rozszerzone statystyki** - asysy, przejęcia, bloki, celność FG
-- 🌐 **Multi-device sync** - opcjonalna synchronizacja przez cloud
-- 📱 **PWA (Progressive Web App)** - instalacja jako aplikacja mobilna
 - 📈 **Historia meczów** - archiwum z wyszukiwarką
 - 🏆 **Statystyki sezonowe** - agregacja danych z wielu meczów
 - 🎥 **Wideo timestamps** - link do momentów wideo
-- 📡 **Live streaming stats** - udostępnianie statystyk na żywo (opcjonalnie)
 
 ### 🐛 Znane Ograniczenia
 - Brak undo dla całych sekwencji (tylko delete pojedynczych akcji)
 - LocalStorage limit ~5MB (wystarczające dla większości przypadków)
 - Print layout wymaga ręcznej konfiguracji marginesów w przeglądarce
 - Drag & Drop nie działa na starszych przeglądarkach (fallback: kliknięcie)
+- Cloud sync wymaga konfiguracji backendu (Firebase lub własny serwer)
+- Live streaming działa przez LocalStorage (wymaga tego samego urządzenia dla full wersji produkcyjnej)
 
 ## Troubleshooting
 
@@ -380,6 +382,112 @@ npm run test:run  # Jednorazowe uruchomienie
 - Przeciągnij na innego zawodnika i **upuść** (nie wystarczy hover)
 - Sprawdź czy używasz wspieranej przeglądarki
 - Fallback: użyj ikony 🏀/💺 w zakładce Setup do ręcznej zmiany
+
+## 🚀 Nowe Funkcje (v3.0) - PWA + Cloud Sync + Live Streaming
+
+### 📱 Progressive Web App (PWA)
+Aplikacja może być teraz zainstalowana jako natywna aplikacja mobilna/desktopowa:
+
+#### Instalacja
+1. Otwórz aplikację w przeglądarce (Chrome, Edge, Safari)
+2. Kliknij przycisk **"📱 Install App"** w nagłówku
+3. Lub użyj opcji przeglądarki: Menu → "Zainstaluj aplikację"
+4. Aplikacja pojawi się na ekranie głównym/pulpicie
+
+#### Zalety PWA
+- ✅ **Offline-first**: Pełna funkcjonalność bez internetu (po pierwszej instalacji)
+- ✅ **Szybkie ładowanie**: Service Worker cachuje zasoby
+- ✅ **Ikona na ekranie głównym**: Szybki dostęp jak natywna aplikacja
+- ✅ **Tryb pełnoekranowy**: Bez paska adresu przeglądarki
+- ✅ **Auto-update**: Automatyczna aktualizacja w tle
+
+#### Konfiguracja
+- **manifest.json**: Metadane aplikacji (nazwa, ikony, kolory)
+- **service-worker.js**: Obsługa cache i offline
+- **Ikony**: `icons/icon.svg` (źródło) + `icons/generate-icons.html` (generator PNG)
+
+### 🌐 Multi-device Sync (Cloud)
+Opcjonalna synchronizacja danych między urządzeniami:
+
+#### Aktywacja
+1. Przejdź do widoku **Game**
+2. Kliknij przycisk **"☁️ Sync OFF"** aby włączyć
+3. Status zmieni się na **"🌐 Sync ON"** z wskaźnikiem stanu
+
+#### Funkcje
+- ✅ **Automatyczna synchronizacja**: Co 5 sekund (konfigurowalne)
+- ✅ **Rozwiązywanie konfliktów**: Strategia "latest" (najnowsze dane wygrywają)
+- ✅ **Retry logic**: Automatyczne ponowne próby przy błędach
+- ✅ **Status indicators**: Wskaźniki syncing/success/error
+
+#### Konfiguracja (cloud-sync-config.js)
+```javascript
+const CloudSyncConfig = {
+  enabled: false,  // Ustaw na true aby włączyć
+  backend: {
+    type: 'firebase',  // lub 'custom'
+    firebase: {
+      apiKey: 'YOUR_API_KEY',
+      projectId: 'your-project-id',
+      // ... więcej ustawień Firebase
+    }
+  },
+  sync: {
+    autoSync: true,
+    syncInterval: 5000,  // 5 sekund
+    conflictResolution: 'latest'
+  }
+};
+```
+
+#### Backend Support
+- **Firebase**: Gotowe wsparcie dla Firebase Realtime Database
+- **Custom API**: Możliwość integracji z własnym backendem
+- **LocalStorage fallback**: Działa offline bez backendu
+
+### 📡 Live Streaming Stats
+Udostępnianie statystyk meczu na żywo dla widzów:
+
+#### Rozpoczęcie Streamingu
+1. Przejdź do widoku **Game**
+2. Kliknij przycisk **"📡 Go Live"**
+3. Pojawi się modal z linkiem do udostępnienia
+4. Skopiuj link i wyślij widzom
+
+#### Funkcje
+- ✅ **Unikalny kod**: 6-znakowy kod dostępu (np. ABC123)
+- ✅ **Automatyczny URL**: Bezpośredni link do viewer.html
+- ✅ **Kopiowanie do schowka**: Przycisk "📋 Copy"
+- ✅ **Real-time updates**: Odświeżanie co sekundę
+- ✅ **Expiry**: Automatyczne wygaśnięcie po 24h (konfigurowalne)
+- ✅ **Read-only view**: Widzowie nie mogą edytować danych
+
+#### Dla Widzów (viewer.html)
+- **Automatyczne odświeżanie**: Co 1 sekundę
+- **Live indicator**: Czerwona kropka "● LIVE"
+- **Pełne statystyki**: Wynik, zawodnicy, faule, game log
+- **Responsive design**: Działa na wszystkich urządzeniach
+
+#### Architektura
+Obecnie streaming działa przez LocalStorage (proof-of-concept):
+- Dla produkcji zalecamy WebSocket backend (np. Socket.io, Firebase)
+- Skalowanie do 100+ widzów wymaga dedykowanego serwera
+- Bezpieczeństwo: Można dodać autentykację
+
+### 📂 Nowe Pliki
+```
+/
+├── manifest.json              # PWA manifest
+├── service-worker.js          # Service Worker dla PWA
+├── cloud-sync-config.js       # Konfiguracja cloud sync
+├── cloud-sync.js              # Logika synchronizacji
+├── live-stream.js             # Logika live streamingu
+├── viewer.html                # Strona dla widzów
+└── icons/
+    ├── icon.svg              # Źródłowa ikona (SVG)
+    └── generate-icons.html   # Generator PNG ikon
+```
+
 ## Licencja i Wsparcie
 
 **Licencja**: Aplikacja stworzona dla LALK. Używaj zgodnie z regulaminem organizacji.
@@ -387,6 +495,15 @@ npm run test:run  # Jednorazowe uruchomienie
 **Kontakt**: W razie problemów technicznych lub propozycji funkcjonalności, skontaktuj się z deweloperem.
 
 **Changelog**:
+- **v3.0** (Styczeń 2026): PWA + Cloud Sync + Live Streaming:
+  - 📱 **Progressive Web App**: Instalacja jako natywna aplikacja
+  - 🌐 **Multi-device Sync**: Opcjonalna synchronizacja przez cloud (Firebase/custom)
+  - 📡 **Live Streaming**: Udostępnianie statystyk na żywo (viewer.html)
+  - Service Worker dla offline support
+  - Manifest.json z konfiguracją PWA
+  - Moduły cloud-sync.js i live-stream.js
+  - Modal z linkiem do udostępnienia
+  - Wskaźniki statusu sync i streaming
 - **v2.5** (Grudzień 2025): Jakość kodu i wydajność:
   - Optymalizacja cachowania statystyk graczy (50-100x przyśpieszenie)
   - Dokumentacja JSDoc dla złożonych metod
@@ -410,10 +527,19 @@ npm run test:run  # Jednorazowe uruchomienie
 
 ---
 
-**Wersja**: 2.5  
-**Data ostatniej aktualizacji**: Grudzień 23, 2025  
+**Wersja**: 3.0  
+**Data ostatniej aktualizacji**: Styczeń 24, 2026  
 **Deweloper**: Łukasz Nowak + GitHub Copilot (AI)  
-**Stack**: Vue.js 3 Production, HTML5, CSS3 Grid/Flexbox, LocalStorage API, Custom Fonts, CSS Animations
+**Stack**: Vue.js 3 Production, HTML5, CSS3 Grid/Flexbox, LocalStorage API, PWA, Service Workers, Custom Fonts, CSS Animations
+
+### 🚀 Nowe w v3.0 - PWA, Cloud Sync & Live Streaming
+- **Progressive Web App**: Pełne wsparcie PWA z instalacją na urządzenia mobilne/desktop
+- **Service Worker**: Offline-first z automatycznym cachowaniem zasobów
+- **Cloud Sync**: Opcjonalna synchronizacja multi-device (Firebase/custom backend)
+- **Live Streaming**: Udostępnianie statystyk na żywo z unikalnym kodem dostępu
+- **Responsive modals**: Nowe UI dla zarządzania streamingiem
+- **PWA Install prompt**: Inteligentne podpowiedzi instalacji
+- **Real-time updates**: Automatyczne odświeżanie dla widzów (1s interval)
 
 ### 🚀 Nowe w v2.5 - Jakość Kodu i Wydajność
 - **Optymalizacja wydajności**: Cachowanie statystyk graczy (50-100x szybsze obliczenia)
