@@ -1,7 +1,7 @@
 {
   "name": "basketball-scoreboard",
-  "version": "2.5.0",
-  "description": "FIBA Basketball Scoreboard with game logging, statistics, and comprehensive testing",
+  "version": "3.0.0",
+  "description": "FIBA Basketball Scoreboard with PWA, cloud sync, live streaming, game logging, statistics, and comprehensive testing",
   "scripts": {
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -15,8 +15,11 @@
     "basketball",
     "scoreboard",
     "FIBA",
-    "sports"
+    "sports",
+    "pwa",
+    "cloud-sync",
+    "live-streaming"
   ],
-  "author": "",
+  "author": "Łukasz Nowak",
   "license": "MIT"
 }

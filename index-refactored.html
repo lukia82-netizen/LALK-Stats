@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Basketball Scoreboard</title>
+    <meta name="description" content="Professional basketball scoreboard for table officials with full game documentation">
+    <meta name="theme-color" content="#16213e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LALK Stats">
+    <title>Basketball Scoreboard - LALK Stats</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
+    
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,6 +26,33 @@
             <div class="header">
                 <h1>🏀 Basketball Scoreboard</h1>
                 <div class="header-controls">
+                    <!-- PWA Install Button -->
+                    <button v-if="showInstallButton" class="btn btn-info btn-small" @click="installPWA" title="Install as app">
+                        📱 Install App
+                    </button>
+                    
+                    <!-- Cloud Sync Toggle -->
+                    <button v-if="currentView === 'game'" 
+                            class="btn btn-small"
+                            :class="cloudSync.enabled ? 'btn-success' : 'btn-secondary'"
+                            @click="toggleCloudSync"
+                            :title="cloudSync.enabled ? 'Cloud sync enabled' : 'Cloud sync disabled'">
+                        <span v-if="cloudSync.syncing">⏳</span>
+                        <span v-else-if="cloudSync.enabled">🌐</span>
+                        <span v-else>☁️</span>
+                        {{ cloudSync.enabled ? 'Sync ON' : 'Sync OFF' }}
+                    </button>
+                    
+                    <!-- Live Streaming -->
+                    <button v-if="currentView === 'game'" 
+                            class="btn btn-small"
+                            :class="liveStream.active ? 'btn-danger' : 'btn-warning'"
+                            @click="toggleLiveStream">
+                        <span v-if="liveStream.active">🔴</span>
+                        <span v-else>📡</span>
+                        {{ liveStream.active ? 'LIVE' : 'Go Live' }}
+                    </button>
+                    
                     <template v-if="['game', 'stats', 'protocol'].includes(currentView)">
                         <button class="btn btn-primary btn-small" @click="printProtocol">🖨️ Print</button>
                         <button class="btn btn-primary btn-small" @click="exportToPDF">📸 PDF</button>
@@ -459,11 +499,69 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Live Stream Share Modal -->
+            <div v-if="liveStream.showModal" class="modal-overlay" @click="liveStream.showModal = false">
+                <div class="modal-content" @click.stop>
+                    <h2>🔴 Live Stream Active</h2>
+                    <p>Share this link to allow others to view live game stats:</p>
+                    <div class="share-link-container">
+                        <input type="text" 
+                               :value="liveStream.shareUrl" 
+                               readonly 
+                               class="share-link-input"
+                               ref="shareLinkInput">
+                        <button class="btn btn-primary" @click="copyShareLink">
+                            {{ liveStream.copied ? '✓ Copied!' : '📋 Copy' }}
+                        </button>
+                    </div>
+                    <div class="share-info">
+                        <p><strong>Share Code:</strong> {{ liveStream.code }}</p>
+                        <p><strong>Viewers:</strong> {{ liveStream.viewers }}</p>
+                        <p><strong>Expires:</strong> {{ formatExpiry(liveStream.expiry) }}</p>
+                    </div>
+                    <button class="btn btn-danger" @click="stopLiveStreamConfirm">Stop Streaming</button>
+                    <button class="btn btn-secondary" @click="liveStream.showModal = false">Close</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Vue.js 3 from CDN - Production Build -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    
+    <!-- Cloud Sync and Live Stream Modules -->
+    <script src="cloud-sync-config.js"></script>
+    <script src="cloud-sync.js"></script>
+    <script src="live-stream.js"></script>
+    
+    <!-- Main App -->
     <script src="app.js"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Notify Vue app that install is available
+            if (window.vueApp && window.vueApp.showInstallButton !== undefined) {
+                window.vueApp.showInstallButton = true;
+            }
+        });
+    </script>
 </body>
 </html>
